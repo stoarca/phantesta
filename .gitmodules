@@ -1,0 +1,3 @@
+[submodule "jasmine_test_utils"]
+	path = jasmine_test_utils
+	url = git@code.parsehub.com:p/jasmine_test_utils.git

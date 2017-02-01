@@ -1,0 +1,156 @@
+<html>
+<head>
+  <style>
+    img {
+      border: 1px solid magenta;
+      max-width: 300px;
+      min-width: 100px;
+      min-height: 50px;
+    }
+    td {
+      width: 300px;
+      height: 300px;
+      max-width: 300px;
+      min-width: 300px;
+    }
+    .reject {
+      width: 80px;
+      height: 80px;
+      background-color: red;
+    }
+    .accept {
+      width: 80px;
+      height: 80px;
+      background-color: green;
+    }
+    #count {
+      font-size: 36px;
+      width: 300px;
+      height: 100px;
+      position: fixed;
+      right: 30px;
+      bottom: 440px;
+    }
+    #clearall {
+      width: 50px;
+      height: 50px;
+      position: fixed;
+      right: 30px;
+      bottom: 360px;
+      background-color: red;
+    }
+    #submit {
+      width: 300px;
+      height: 300px;
+      position: fixed;
+      right: 30px;
+      bottom: 30px;
+      background-color: green;
+    }
+  </style>
+  <script>
+    setTimeout(function() {
+      var wrapCell = function(element) {
+        var cell = document.createElement('td');
+        cell.appendChild(element);
+        return cell;
+      }
+      var addImageRow = function(container, imgSrc) {
+        var a = document.createElement('a');
+        a.href = imgSrc;
+        var image = document.createElement('img');
+        image.src = imgSrc;
+        a.appendChild(image);
+        container.appendChild(wrapCell(a));
+      }
+
+      var diffs = null;
+      var listDiffs = function() {
+        var node = document.getElementById('content');
+        while (node.hasChildNodes()) {
+          node.removeChild(node.lastChild);
+        }
+        node.innerHTML = '<tr><td>name</td><td>good</td><td>new</td><td>diff</td></tr>';
+
+        return fetch('/list_of_diffs', {
+          method: 'get',
+        }).then(function(resp) { return resp.json() }).then(function(resp) {
+          diffs = resp.diffs;
+          for (var i = 0; i < diffs.length; ++i) {
+            (function(i) {
+              var diff = diffs[i];
+              var row = document.createElement('tr');
+
+              var name = document.createElement('td');
+              name.innerHTML = diff.name;
+              row.appendChild(name);
+
+              addImageRow(row, diff.goodSrc);
+              addImageRow(row, diff.newSrc);
+              addImageRow(row, diff.diffSrc);
+
+              var accept = document.createElement('div');
+              accept.className = 'reject';
+              accept.type = 'checkbox';
+              accept.addEventListener('click', function(e) {
+                diff.replace = !diff.replace;
+                if (diff.replace) {
+                  accept.className = 'accept';
+                } else {
+                  accept.className = 'reject';
+                }
+              });
+              row.appendChild(wrapCell(accept));
+
+              document.getElementById('content').appendChild(row);
+            })(i);
+          }
+          document.getElementById('count').innerHTML =
+              diffs.length.toString() + ' tests failing';
+        });
+      };
+
+      document.getElementById('clearall').addEventListener('click', function() {
+        return fetch('/clear_diffs', {
+          method: 'POST',
+        }).then(function(resp) { return resp.json() }).then(function(resp) {
+          if (resp.status == 'success') {
+            listDiffs();
+          }
+        });
+      });
+
+      document.getElementById('submit').addEventListener('click', function() {
+        return fetch('/submit_diffs', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            diffs: diffs,
+          }),
+        }).then(function(resp) { return resp.json() }).then(function(resp) {
+          if (resp.status == 'success') {
+            listDiffs();
+          }
+        });
+      });
+
+      listDiffs();
+    }, 50);
+  </script>
+</head>
+<body>
+  <table id="content">
+  </table>
+  <div id="count">
+  </div>
+  <button id="clearall">
+    Delete all
+  </button>
+  <button id="submit">
+    Accept changes
+  </button>
+</body>
+</html>
+
