@@ -5,13 +5,13 @@
       border: 1px solid magenta;
       max-width: 300px;
       min-width: 100px;
+      width: 100%;
       min-height: 50px;
     }
     td {
-      width: 300px;
       height: 300px;
-      max-width: 300px;
-      min-width: 300px;
+      max-width: 10%;
+      min-width: 100px;
     }
     .reject {
       width: 80px;
@@ -70,7 +70,7 @@
         while (node.hasChildNodes()) {
           node.removeChild(node.lastChild);
         }
-        node.innerHTML = '<tr><td>name</td><td>good</td><td>new</td><td>diff</td></tr>';
+        node.innerHTML = '<tr><td>name</td><td>accept</td><td>good</td><td>new</td><td>diff</td></tr>';
 
         return fetch('/list_of_diffs', {
           method: 'get',
@@ -85,10 +85,6 @@
               name.innerHTML = diff.name;
               row.appendChild(name);
 
-              addImageRow(row, diff.goodSrc);
-              addImageRow(row, diff.newSrc);
-              addImageRow(row, diff.diffSrc);
-
               var accept = document.createElement('div');
               accept.className = 'reject';
               accept.type = 'checkbox';
@@ -101,6 +97,10 @@
                 }
               });
               row.appendChild(wrapCell(accept));
+
+              addImageRow(row, diff.goodSrc);
+              addImageRow(row, diff.newSrc);
+              addImageRow(row, diff.diffSrc);
 
               document.getElementById('content').appendChild(row);
             })(i);

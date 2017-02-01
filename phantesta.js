@@ -119,7 +119,7 @@ var ssInfoExpect = function(ssInfo, msg) {
 }
 Phantesta.prototype.testSingle = async function(ssInfo) {
   if (!fs.existsSync(this.getGoodPath(ssInfo.name))) {
-    ssInfoExpect(ssInfo, 'screenshot fail: ' + ssInfo.name).toBe(
+    ssInfoExpect(ssInfo, 'new screenshot: ' + ssInfo.name).toBe(
         'screenshot success: ' + ssInfo.name);
     copy(this.getNewPath(ssInfo.name), this.getDiffPath(ssInfo.name));
     return;
@@ -196,7 +196,7 @@ Phantesta.prototype.startServer = function(options) {
 
   app.use(bodyParser.json());
   app.get('/', function(req, resp) {
-    resp.sendFile(path.resolve('phantesta-server.html'));
+    resp.sendFile(path.resolve(__dirname, 'phantesta-server.html'));
   });
 
   app.get('/list_of_diffs', function(req, resp) {
@@ -230,7 +230,7 @@ Phantesta.prototype.startServer = function(options) {
   });
 
   app.listen(options.port, options.host, function() {
-    console.log('started server on localhost:7995');
+    console.log('started server on ' + options.host + ':' + options.port);
   });
 };
 export default Phantesta;

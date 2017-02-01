@@ -2,10 +2,13 @@
   "name": "phantesta",
   "version": "1.0.0",
   "description": "Screenshot diffing for tests",
-  "main": "screenshotter.js",
+  "main": "phantesta.js",
   "scripts": {
     "postinstall": "npm link ./jasmine_test_utils",
     "test": "babel-node tests/testphantesta.js"
+  },
+  "bin": {
+    "phantesta-server": "bin/phantesta-server.js"
   },
   "repository": {
     "type": "git",
