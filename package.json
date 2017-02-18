@@ -4,7 +4,6 @@
   "description": "Screenshot diffing for tests",
   "main": "phantesta.js",
   "scripts": {
-    "postinstall": "npm link ./jasmine_test_utils",
     "test": "babel-node tests/testphantesta.js"
   },
   "bin": {
@@ -12,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@code.parsehub.com:p/phantesta.git"
+    "url": "git@github.com:stoarca/phantesta.git"
   },
   "author": "Sergiu Toarca",
-  "license": "Proprietary",
+  "license": "MIT",
   "dependencies": {
     "body-parser": "^1.15.2",
     "express": "^4.14.1",
-    "jasmine_test_utils": "file:jasmine_test_utils",
+    "jasmine_test_utils": "^1.0.0",
     "phantom": "^4.0.0",
     "q": "^1.4.1",
     "request": "^2.79.0",
