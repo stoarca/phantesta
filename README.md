@@ -5,55 +5,59 @@ write regression tests to ensure a rendered portion of a page does not change.
 
 ## Installation
 
+```bash
 npm install phantesta
+```
 
 ## Usage
 
-    import { syncify } from 'jasmine_test_utils';
-    import path from 'path';
-    import phantom from 'phantom';
-    import Phantesta from 'phantesta';
+```js
+import { syncify } from 'jasmine_test_utils';
+import path from 'path';
+import phantom from 'phantom';
+import Phantesta from 'phantesta';
 
-    describe('my test suite', function() {
-      var instance = null;
-      var page = null;
-      var diffPage = null;
-      var phantesta = null;
+describe('my test suite', function() {
+  var instance = null;
+  var page = null;
+  var diffPage = null;
+  var phantesta = null;
 
-      beforeAll(syncify(async function() {
-        instance = await phantom.create(['--web-security=false']);
-        diffPage = await instance.createPage();
-      }));
-      afterAll(syncify(async function() {
-        await instance.exit();
-      }));
-      beforeEach(syncify(async function() {
-        phantesta = new Phantesta(diffPage, {
-          screenshotPath: path.resolve(__dirname, '../screenshots'),
-        });
-        page = await instance.createPage();
-      }));
-      afterEach(syncify(async function() {
-        if (page) {
-          await instance.execute('phantom', 'invokeMethod', ['clearCookies']);
-          await page.close();
-          page = null;
-        }
-      }));
-
-      it('should do some tests', syncify(async function() {
-        await page.open('http://www.google.com');
-        await phantesta.expectStable(page, 'html', 'unique_snapshot_name');
-        await phantesta.expectStable(page, 'html', 'unique_snapshot_name2');
-        await phantesta.expectSame('unique_snapshot_name', 'unique_snapshot_name2');
-        await page.open('http://www.asdf.com');
-        await phantesta.expectStable(page, 'html', 'another_website');
-        await phantesta.expectDiff('unique_snapshot_name', 'another_website');
-      }));
+  beforeAll(syncify(async function() {
+    instance = await phantom.create(['--web-security=false']);
+    diffPage = await instance.createPage();
+  }));
+  afterAll(syncify(async function() {
+    await instance.exit();
+  }));
+  beforeEach(syncify(async function() {
+    phantesta = new Phantesta(diffPage, {
+      screenshotPath: path.resolve(__dirname, '../screenshots'),
     });
+    page = await instance.createPage();
+  }));
+  afterEach(syncify(async function() {
+    if (page) {
+      await instance.execute('phantom', 'invokeMethod', ['clearCookies']);
+      await page.close();
+      page = null;
+    }
+  }));
+
+  it('should do some tests', syncify(async function() {
+    await page.open('http://www.google.com');
+    await phantesta.expectStable(page, 'html', 'unique_snapshot_name');
+    await phantesta.expectStable(page, 'html', 'unique_snapshot_name2');
+    await phantesta.expectSame('unique_snapshot_name', 'unique_snapshot_name2');
+    await page.open('http://www.asdf.com');
+    await phantesta.expectStable(page, 'html', 'another_website');
+    await phantesta.expectDiff('unique_snapshot_name', 'another_website');
+  }));
+});
+```
 
 Snapshots will be stored in the `screenshotPath` directory with (default)
-suffixes of `.good.png`, `.new.png`, '.diff.png`. You should commit all the
+suffixes of `.good.png`, `.new.png`, `.diff.png`. You should commit all the
 `.good.png` images to your git repository, and add all the `.new.png` and
 `.diff.png` images to your `.gitignore`.
 
@@ -71,7 +75,9 @@ Eventually, you will have enough snapshots that it becomes a burden to manually
 inspect and move them around. There is a UI that comes with Phantesta that
 makes it significantly easier to review and accept changed snapshots. To do so,
 run
+```bash
     phantesta-server --host localhost --port 7991 --screenshotPath tests/visual/screenshots
+```
 then visit `localhost:7991` after running tests. This site will have all the
 failed snapshots, with the option to view and accept diffs to snapshots.
 
