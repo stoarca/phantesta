@@ -3,7 +3,7 @@ import phantom from 'phantom';
 import rp from 'request-promise';
 import { createPage, HtmlServer, safeRequest, sleep, startServer, syncify } from 'jasmine_test_utils';
 
-import Phantesta from '../../phantesta';
+import Phantesta from '../../src/phantesta';
 
 describe('phantesta', function() {
   var htmlServer = null;

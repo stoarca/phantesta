@@ -6,7 +6,7 @@ write regression tests to ensure a rendered portion of a page does not change.
 ## Installation
 
 ```bash
-npm install phantesta
+npm install --save-dev phantesta
 ```
 
 ## Usage
@@ -86,7 +86,16 @@ failed snapshots, with the option to view and accept diffs to snapshots.
 ### new Phantesta(diffPage, options)
 
  - `diffPage` is a node-phantomjs page which is not used for anything else
- - `options` is a dict with the keys `screenshotPath`, `goodExt`, `newExt`, `diffExt`.
+ - `options` is a dict with the keys
+   - `screenshotPath` defaults to `"tests/visual/screenshots"`
+   - `goodExt` defaults to `".good.png"`
+   - `newExt` defaults to `".new.png"`
+   - `diffExt` defaults to `".diff.png"`
+   - `expectToBe` defaults to `function(actual, expected) { expect(actual).toBe(expected) }`
+   - `expectNotToBe` defaults to `function(actual, expected) { expect(actual).not.toBe(expected) }`
+
+Override the expectToBe and expectNotToBe calls with methods from your test
+framework if you're not using jasmine.
 
 ### async Phantesta.prototype.expectStable(page, target, name)
 

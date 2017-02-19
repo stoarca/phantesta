@@ -30,6 +30,12 @@ var Phantesta = function(diffPage, options) {
     goodExt: '.good.png',
     newExt: '.new.png',
     diffExt: '.diff.png',
+    expectToBe: function(actual, expected) {
+      expect(actual).toBe(expected);
+    },
+    expectNotToBe: function(actual, expected) {
+      expect(actual).not.toBe(expected);
+    },
   };
   this.options = {
     ...defaults,
@@ -79,27 +85,31 @@ Phantesta.prototype.expectUnstable = async function(page, target, name) {
 };
 Phantesta.prototype.expectSame = async function(name1, name2) {
   if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2))) {
-    expect('fail: ' + name1 + ' is the same as ' + name2).toBe(
+    this.options.expectToBe(
+        'fail: ' + name1 + ' is the same as ' + name2,
         'success: ' + name1 + ' is the same as ' + name2);
   } else {
-    expect('success: ' + name1 + ' is the same as ' + name2).toBe(
+    this.options.expectToBe(
+        'success: ' + name1 + ' is the same as ' + name2,
         'success: ' + name1 + ' is the same as ' + name2);
   }
 };
 Phantesta.prototype.expectDiff = async function(name1, name2) {
   if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2))) {
-    expect('success: ' + name1 + ' is different than ' + name2).toBe(
+    this.options.expectToBe(
+        'success: ' + name1 + ' is different than ' + name2,
         'success: ' + name1 + ' is different than ' + name2);
   } else {
-    expect('fail: ' + name1 + ' is different than ' + name2).toBe(
+    this.options.expectToBe(
+        'fail: ' + name1 + ' is different than ' + name2,
         'success: ' + name1 + ' is different than ' + name2);
   }
 };
 Phantesta.prototype.isDiff = async function(filename1, filename2) {
   await this.diffPage.open('about:blank');
-  var url = 'file:///' + path.resolve(__dirname, 'resemble.html');
+  var url = 'file:///' + path.resolve(__dirname, '../resemble.html');
   var stat = await this.diffPage.open(url);
-  expect(stat).toBe('success');
+  this.options.expectToBe(stat, 'success');
   await this.diffPage.uploadFile('#a', filename1);
   await this.diffPage.uploadFile('#b', filename2);
   await this.diffPage.evaluate(function() {
@@ -111,15 +121,18 @@ Phantesta.prototype.isDiff = async function(filename1, filename2) {
   });
   return ret.rawMisMatchPercentage > 0;
 }
-var ssInfoExpect = function(ssInfo, msg) {
+Phantesta.prototype.ssInfoExpect = function(ssInfo, actual, expected) {
   if (ssInfo.type === 'stable') {
-    return expect(msg);
+    this.options.expectToBe(actual, expected);
+  } else {
+    this.options.expectNotToBe(actual, expected);
   }
-  return expect(msg).not;
 }
 Phantesta.prototype.testSingle = async function(ssInfo) {
   if (!fs.existsSync(this.getGoodPath(ssInfo.name))) {
-    ssInfoExpect(ssInfo, 'new screenshot: ' + ssInfo.name).toBe(
+    this.ssInfoExpect(
+        ssInfo,
+        'new screenshot: ' + ssInfo.name,
         'screenshot success: ' + ssInfo.name);
     copy(this.getNewPath(ssInfo.name), this.getDiffPath(ssInfo.name));
     return;
@@ -132,10 +145,14 @@ Phantesta.prototype.testSingle = async function(ssInfo) {
       newPath: this.getNewPath(ssInfo.name),
       diffPath: this.getDiffPath(ssInfo.name),
     });
-    ssInfoExpect(ssInfo, 'screenshot fail: ' + ssInfo.name + ' ' + showPaths).toBe(
+    this.ssInfoExpect(
+        ssInfo,
+        'screenshot fail: ' + ssInfo.name + ' ' + showPaths,
         'screenshot success: ' + ssInfo.name);
   } else {
-    ssInfoExpect(ssInfo, 'screenshot success: ' + ssInfo.name).toBe(
+    this.ssInfoExpect(
+        ssInfo,
+        'screenshot success: ' + ssInfo.name,
         'screenshot success: ' + ssInfo.name);
     safeUnlinkSync(this.getNewPath(ssInfo.name));
     safeUnlinkSync(this.getDiffPath(ssInfo.name));
@@ -196,7 +213,7 @@ Phantesta.prototype.startServer = function(options) {
 
   app.use(bodyParser.json());
   app.get('/', function(req, resp) {
-    resp.sendFile(path.resolve(__dirname, 'phantesta-server.html'));
+    resp.sendFile(path.resolve(__dirname, '../phantesta-server.html'));
   });
 
   app.get('/list_of_diffs', function(req, resp) {
