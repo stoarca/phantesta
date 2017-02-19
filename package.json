@@ -1,6 +1,6 @@
 {
   "name": "phantesta",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Screenshot diffing for tests",
   "main": "dist/phantesta.js",
   "scripts": {
@@ -9,7 +9,7 @@
     "test": "babel-node tests/testphantesta.js"
   },
   "bin": {
-    "phantesta-server": "bin/phantesta-server.js"
+    "phantesta-server": "dist/bin/phantesta-server.js"
   },
   "repository": {
     "type": "git",
