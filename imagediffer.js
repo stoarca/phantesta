@@ -9,6 +9,7 @@ var ImageDiffer = function() {
 };
 ImageDiffer.prototype.doDiff = function() {
   var self = this;
+  this.result = null;
   var a = document.getElementById('a').files[0];
   var b = document.getElementById('b').files[0];
   return resemble(a).compareTo(b).ignoreAntialiasing().onComplete(function(result) {
@@ -19,6 +20,9 @@ ImageDiffer.prototype.doDiff = function() {
   });
 };
 ImageDiffer.prototype.getResult = function() {
+  if (!this.result) {
+    throw new Error('result is not ready yet!');
+  }
   return this.result;
 };
 

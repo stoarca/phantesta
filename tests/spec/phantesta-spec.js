@@ -60,6 +60,23 @@ describe('phantesta', function() {
       await phantesta.expectSame('page1', 'page1_2');
       await phantesta.expectDiff('page1', 'page2');
     }), 20000);
+    it('should work with large pages', syncify(async function() {
+      var url1 = htmlServer.getUrl('/html/image.html');
+
+      await page.open(url1);
+      await phantesta.expectUnstable(page, 'html', 'image1');
+      await phantesta.acceptDiff('image1');
+      await phantesta.expectStable(page, 'html', 'image1');
+
+      await page.evaluate(function() {
+        var t = document.createTextNode('blah');
+        document.body.appendChild(t);
+      });
+
+      await phantesta.expectUnstable(page, 'html', 'image1');
+      await phantesta.acceptDiff('image1');
+      await phantesta.expectStable(page, 'html', 'image1');
+    }), 20000);
     it('should serve diffs correctly', syncify(async function() {
       phantesta.startServer({host: 'localhost', port: '7992'});
       var url1 = htmlServer.getUrl('/html/page1.html');

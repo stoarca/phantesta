@@ -116,9 +116,12 @@ Phantesta.prototype.isDiff = async function(filename1, filename2) {
     window.imageDiffer = new ImageDiffer();
     return window.imageDiffer.doDiff();
   });
-  var ret = await this.diffPage.evaluate(function() {
-    return window.imageDiffer.result;
-  });
+  var ret = null;
+  while (ret === null) {
+    ret = await this.diffPage.evaluate(function() {
+      return window.imageDiffer.getResult();
+    });
+  }
   return ret.rawMisMatchPercentage > 0;
 }
 Phantesta.prototype.ssInfoExpect = function(ssInfo, actual, expected) {

@@ -1,6 +1,6 @@
 {
   "name": "phantesta",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Screenshot diffing for tests",
   "main": "dist/phantesta.js",
   "scripts": {
