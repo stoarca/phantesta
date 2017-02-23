@@ -133,11 +133,11 @@ Phantesta.prototype.ssInfoExpect = function(ssInfo, actual, expected) {
 }
 Phantesta.prototype.testSingle = async function(ssInfo) {
   if (!fs.existsSync(this.getGoodPath(ssInfo.name))) {
+    copy(this.getNewPath(ssInfo.name), this.getDiffPath(ssInfo.name));
     this.ssInfoExpect(
         ssInfo,
         'new screenshot: ' + ssInfo.name,
         'screenshot success: ' + ssInfo.name);
-    copy(this.getNewPath(ssInfo.name), this.getDiffPath(ssInfo.name));
     return;
   }
   if (await this.isDiff(this.getNewPath(ssInfo.name), this.getGoodPath(ssInfo.name))) {
