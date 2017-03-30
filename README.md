@@ -1,6 +1,7 @@
 # Phantesta
 
-Phantesta is a testing library built on top of phantomjs-node. It allows you to
+Phantesta is a testing library built on top of phantomjs-node or selenium.
+It allows you to
 write regression tests to ensure a rendered portion of a page does not change.
 
 ## Installation
@@ -85,7 +86,9 @@ failed snapshots, with the option to view and accept diffs to snapshots.
 
 ### new Phantesta(diffPage, options)
 
- - `diffPage` is a node-phantomjs page which is not used for anything else
+ - `diffPage` is one of:
+   - a node-phantomjs page which is not used for anything else
+   - a selenium driver which is not used for anything else
  - `options` is a dict with the keys
    - `screenshotPath` defaults to `"tests/visual/screenshots"`
    - `goodExt` defaults to `".good.png"`
@@ -99,7 +102,9 @@ framework if you're not using jasmine.
 
 ### async Phantesta.prototype.expectStable(page, target, name)
 
- - `page` is the node-phantomjs page of which a screenshot is to be taken
+ - `page` is one of:
+   - the node-phantomjs page of which a screenshot is to be taken
+   - the selenium driver of which a screenshot is to be taken
  - `target` is a selector used to target a portion of the page
  - `name` is a unique name for the snapshot
 

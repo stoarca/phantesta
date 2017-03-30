@@ -1,6 +1,6 @@
 {
   "name": "phantesta",
-  "version": "1.0.6",
+  "version": "2.0.0",
   "description": "Screenshot diffing for tests",
   "main": "dist/phantesta.js",
   "scripts": {
@@ -24,7 +24,8 @@
     "phantom": "^4.0.0",
     "q": "^1.4.1",
     "request": "^2.79.0",
-    "restify": "^4.3.0"
+    "restify": "^4.3.0",
+    "selenium-webdriver": "3.3.0"
   },
   "devDependencies": {
     "babel-cli": "^6.22.2",

@@ -4,6 +4,7 @@ import express from 'express';
 import fs from 'fs';
 import glob from 'glob';
 import path from 'path';
+import { By, until } from 'selenium-webdriver';
 import q from 'q';
 
 var safeUnlinkSync = function(file) {
@@ -21,6 +22,14 @@ var safeUnlinkSync = function(file) {
 var copy = function(src, dst) {
   // TODO: injection
   child_process.execSync('cp ' + src + ' ' + dst);
+};
+
+var isSelenium = function(page) {
+  return !!page.takeScreenshot;
+};
+
+var isPhantom = function(page) {
+  return !!page.render;
 };
 
 var Phantesta = function(diffPage, options) {
@@ -51,23 +60,32 @@ Phantesta.prototype.getNewPath = function(name) {
 Phantesta.prototype.getDiffPath = function(name) {
   return path.resolve(this.options.screenshotPath, name + this.options.diffExt);
 };
-Phantesta.prototype.screenshot = async function(page, target, path) {
-  var prevClip = await page.property('clipRect');
-  var clipRect = await page.evaluate(function(target) {
-    return document.querySelectorAll(target)[0].getBoundingClientRect();
-  }, target);
-  if (!clipRect) {
-    console.log(
-        'Unable to take screenshot of target: ' + target + ' with path ' + path);
+Phantesta.prototype.screenshot = async function(page, target, filename) {
+  if (isPhantom(page)) {
+    var prevClip = await page.property('clipRect');
+    var clipRect = await page.evaluate(function(target) {
+      return document.querySelectorAll(target)[0].getBoundingClientRect();
+    }, target);
+    if (!clipRect) {
+      console.log(
+          'Unable to take screenshot of target: ' + target + ' with path ' + filename);
+    }
+    await page.property('clipRect', {
+      top: clipRect.top,
+      left: clipRect.left,
+      width: clipRect.width,
+      height: clipRect.height,
+    });
+    await page.render(filename);
+    await page.property('clipRect', prevClip);
+  } else if (isSelenium(page)) {
+    var element = await page.findElement(By.css(target));
+    var image = await element.takeScreenshot();
+    child_process.spawnSync('mkdir', ['-p', path.dirname(filename)]);
+    fs.writeFileSync(filename, image, 'base64');
+  } else {
+    throw new Error('Unable to determine type of page');
   }
-  await page.property('clipRect', {
-    top: clipRect.top,
-    left: clipRect.left,
-    width: clipRect.width,
-    height: clipRect.height,
-  });
-  await page.render(path);
-  await page.property('clipRect', prevClip);
 };
 Phantesta.prototype.expectStable = async function(page, target, name) {
   await this.screenshot(page, target, this.getNewPath(name));
@@ -106,23 +124,49 @@ Phantesta.prototype.expectDiff = async function(name1, name2) {
   }
 };
 Phantesta.prototype.isDiff = async function(filename1, filename2) {
-  await this.diffPage.open('about:blank');
-  var url = 'file:///' + path.resolve(__dirname, '../resemble.html');
-  var stat = await this.diffPage.open(url);
-  this.options.expectToBe(stat, 'success');
-  await this.diffPage.uploadFile('#a', filename1);
-  await this.diffPage.uploadFile('#b', filename2);
-  await this.diffPage.evaluate(function() {
-    window.imageDiffer = new ImageDiffer();
-    return window.imageDiffer.doDiff();
-  });
-  var ret = null;
-  while (ret === null) {
-    ret = await this.diffPage.evaluate(function() {
-      return window.imageDiffer.getResult();
+  if (isPhantom(this.diffPage)) {
+    await this.diffPage.open('about:blank');
+    var url = 'file:///' + path.resolve(__dirname, '../resemble.html');
+    var stat = await this.diffPage.open(url);
+    this.options.expectToBe(stat, 'success');
+    await this.diffPage.uploadFile('#a', filename1);
+    await this.diffPage.uploadFile('#b', filename2);
+    await this.diffPage.evaluate(function() {
+      window.imageDiffer = new ImageDiffer();
+      return window.imageDiffer.doDiff();
     });
+    var ret = null;
+    while (ret === null) {
+      ret = await this.diffPage.evaluate(function() {
+        return window.imageDiffer.getResult();
+      });
+    }
+    return ret.rawMisMatchPercentage > 0;
+  } else if (isSelenium(this.diffPage)) {
+    await this.diffPage.get('about:blank');
+    var url = 'file:///' + path.resolve(__dirname, '../resemble.html');
+    await this.diffPage.get(url);
+    await this.diffPage.findElement(By.css('#a')).sendKeys(filename1);
+    await this.diffPage.findElement(By.css('#b')).sendKeys(filename2);
+    await this.diffPage.executeScript(function() {
+      window.imageDiffer = new ImageDiffer();
+      return window.imageDiffer.doDiff();
+    });
+    var ret = null;
+    while (ret === null) {
+      try {
+        ret = await this.diffPage.executeScript(function() {
+          return window.imageDiffer.getResult();
+        });
+      } catch (e) {
+        // intentionally eat error, result may be not ready yet
+        console.log(e);
+      }
+    }
+    return ret.rawMisMatchPercentage > 0;
+  } else {
+    throw new Error('Unable to determine type of page');
   }
-  return ret.rawMisMatchPercentage > 0;
 }
 Phantesta.prototype.ssInfoExpect = function(ssInfo, actual, expected) {
   if (ssInfo.type === 'stable') {
