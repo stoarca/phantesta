@@ -82,7 +82,7 @@ describe('phantesta', function() {
         await phantesta.expectUnstable(page, 'html', 'image1');
         await phantesta.acceptDiff('image1');
         await phantesta.expectStable(page, 'html', 'image1');
-      }), 20000);
+      }), 50000);
       it('should serve diffs correctly', syncify(async function() {
         phantesta.startServer({host: 'localhost', port: '7992'});
         var url1 = htmlServer.getUrl('/html/page1.html');
@@ -145,6 +145,7 @@ describe('phantesta', function() {
       var profile = new firefox.Profile();
       var firefoxOpts = new firefox.Options();
       firefoxOpts.setProfile(profile);
+      firefoxOpts.useGeckoDriver(false);
       return new Builder()
           .forBrowser('firefox')
           .setChromeOptions(chromeOpts)
