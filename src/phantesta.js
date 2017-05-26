@@ -36,6 +36,7 @@ var Phantesta = function(diffPage, options) {
   this.diffPage = diffPage;
   var defaults = {
     screenshotPath: 'tests/visual/screenshots',
+    subPath: [],
     goodExt: '.good.png',
     newExt: '.new.png',
     diffExt: '.diff.png',
@@ -51,14 +52,25 @@ var Phantesta = function(diffPage, options) {
     ...options,
   };
 };
+Phantesta.prototype.group = function(groupName) {
+  this.options.subPath.push(groupName);
+  return this.getCurrentPath();
+};
+Phantesta.prototype.ungroup = function() {
+  this.options.subPath.pop();
+  return this.getCurrentPath();
+};
+Phantesta.prototype.getCurrentPath = function() {
+  return this.options.screenshotPath + '/' + this.options.subPath.join('/');
+};
 Phantesta.prototype.getGoodPath = function(name) {
-  return path.resolve(this.options.screenshotPath, name + this.options.goodExt);
+  return path.resolve(this.getCurrentPath(), name + this.options.goodExt);
 };
 Phantesta.prototype.getNewPath = function(name) {
-  return path.resolve(this.options.screenshotPath, name + this.options.newExt);
+  return path.resolve(this.getCurrentPath(), name + this.options.newExt);
 };
 Phantesta.prototype.getDiffPath = function(name) {
-  return path.resolve(this.options.screenshotPath, name + this.options.diffExt);
+  return path.resolve(this.getCurrentPath(), name + this.options.diffExt);
 };
 Phantesta.prototype.screenshot = async function(page, target, filename) {
   if (isPhantom(page)) {
@@ -210,7 +222,7 @@ Phantesta.prototype.destructiveClearAllSnapshots = async function() {
 };
 
 Phantesta.prototype.listOfDiffFiles = function(f) {
-  var dir = path.resolve(this.options.screenshotPath, '*' + this.options.diffExt);
+  var dir = path.resolve(this.options.screenshotPath, '**/*' + this.options.diffExt);
   var failedFiles = glob(dir, function(err, files) {
     f(files);
   });
@@ -219,7 +231,8 @@ Phantesta.prototype.clearDiffs = function(f) {
   var self = this;
   this.listOfDiffFiles(function(files) {
     for (var i = 0; i < files.length; ++i) {
-      var name = path.basename(files[i]).slice(0, -self.options.diffExt.length);
+      var name = path.relative(path.resolve(self.options.screenshotPath), files[i])
+          .slice(0, -self.options.diffExt.length);
       console.log('removing ' + name);
       safeUnlinkSync(self.getNewPath(name));
       safeUnlinkSync(self.getDiffPath(name));
@@ -232,7 +245,8 @@ Phantesta.prototype.listOfDiffs = function(f) {
   this.listOfDiffFiles(function(files) {
     var diffs = [];
     for (var i = 0; i < files.length; ++i) {
-      var name = path.basename(files[i]).slice(0, -self.options.diffExt.length);
+      var name = path.relative(path.resolve(self.options.screenshotPath), files[i])
+          .slice(0, -self.options.diffExt.length);
       diffs.push({
         name: name,
         goodSrc: '/images/' + encodeURIComponent(self.getGoodPath(name)),

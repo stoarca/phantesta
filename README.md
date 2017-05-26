@@ -45,6 +45,14 @@ describe('my test suite', function() {
     }
   }));
 
+  beforeEach(function() {
+    phantesta.group('group1');
+  });
+
+  afterEach(function() {
+    phantesta.ungroup();
+  });
+
   it('should do some tests', syncify(async function() {
     await page.open('http://www.google.com');
     await phantesta.expectStable(page, 'html', 'unique_snapshot_name');
@@ -119,3 +127,23 @@ Passes if the screenshot `name1` is the same as `name2`. Fails otherwise.
 ### async Phantesta.prototype.expectDiff(name1, name2)
 
 Passes if the screenshot `name1` is different than `name2`. Fails otherwise.
+
+### Phantesta.prototype.group(groupName)
+
+Change the current screenshot directory to a subdirectory named `groupName`.
+Can be called multiple times.
+
+Returns the current screenshot directory
+
+### Phantesta.prototype.group()
+
+Change the current screenshot directory to the parent.
+Can be called multiple times.
+
+If the current screenshot directory is the root screenshot directory,
+this has no effect.
+
+Returns the current screenshot directory
+
+__NOTE:__ Place the call to `group` and `ungroup` inside
+`beforeEach` and `afterEach` respectively when using jasmine.
