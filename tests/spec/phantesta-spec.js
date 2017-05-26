@@ -186,5 +186,53 @@ describe('phantesta', function() {
       await phantesta.expectSame('selenium_page1', 'selenium_page1_2');
       await phantesta.expectDiff('selenium_page1', 'selenium_page2');
     }), 20000);
+
+    describe('should test one level grouping', function() {
+      beforeEach(function() {
+        phantesta.group('group1');
+      });
+
+      afterEach(function() {
+        phantesta.ungroup();
+      });
+
+      it('test current path', function() {
+        expect(phantesta.getCurrentPath()).toBe(path.resolve(__dirname, '../screenshots', 'group1'));
+      });
+
+      it('test groups', syncify(async function() {
+        var url1 = htmlServer.getUrl('/html/page1.html');
+        var url2 = htmlServer.getUrl('/html/page2.html');
+
+        await page.get(url1);
+        await phantesta.expectUnstable(page, 'html', 'group1_page1');
+        await phantesta.expectUnstable(page, 'html', 'group1_page2');
+        await phantesta.acceptDiff('group1_page1', 'group1_page2');
+      }));
+
+      describe('should test two level grouping', function() {
+        beforeEach(function() {
+          phantesta.group('group2');
+        });
+
+        afterEach(function() {
+          phantesta.ungroup();
+        });
+
+        it('test current path', function() {
+          expect(phantesta.getCurrentPath()).toBe(path.resolve(__dirname, '../screenshots', 'group1', 'group2'));
+        });
+
+        it('test groups', syncify(async function() {
+          var url1 = htmlServer.getUrl('/html/page1.html');
+          var url2 = htmlServer.getUrl('/html/page2.html');
+
+          await page.get(url1);
+          await phantesta.expectUnstable(page, 'html', 'group2_page1');
+          await phantesta.expectUnstable(page, 'html', 'group2_page2');
+          await phantesta.acceptDiff('group2_page1', 'group2_page2');
+        }));
+      });
+    })
   });
 });
