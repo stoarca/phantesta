@@ -1,6 +1,6 @@
 {
   "name": "phantesta",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Screenshot diffing for tests",
   "main": "dist/phantesta.js",
   "scripts": {
@@ -22,7 +22,7 @@
     "argparse": "1.0.9",
     "body-parser": "1.15.2",
     "express": "4.14.1",
-    "jasmine_test_utils": "1.0.1",
+    "jasmine_test_utils": "2.0.3",
     "phantom": "4.0.0",
     "q": "1.4.1",
     "request": "2.79.0",
