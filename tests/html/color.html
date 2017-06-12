@@ -1,0 +1,6 @@
+<div id="colorblock" style="width:500px;height:500px;">
+</div>
+<script>
+  var color = /color=(.{6})/g.exec(document.URL)[1];
+  document.getElementById('colorblock').style['background-color'] = '#' + color;
+</script>

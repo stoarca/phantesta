@@ -12,7 +12,7 @@ ImageDiffer.prototype.doDiff = function() {
   this.result = null;
   var a = document.getElementById('a').files[0];
   var b = document.getElementById('b').files[0];
-  return resemble(a).compareTo(b).ignoreAntialiasing().onComplete(function(result) {
+  return resemble(a).compareTo(b).ignoreNothing().onComplete(function(result) {
     self.result = result;
     var image = new Image();
     document.getElementById('result').appendChild(image);

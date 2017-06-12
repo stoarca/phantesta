@@ -36,6 +36,7 @@ describe('phantesta', function() {
       phantesta = new Phantesta(diffPage, {
         screenshotPath: path.resolve(__dirname, '../screenshots'),
       });
+      phantesta.destructiveClearAllSnapshots();
       page = await createPage(instance);
     }));
     afterEach(syncify(async function() {
@@ -44,7 +45,6 @@ describe('phantesta', function() {
         await page.close();
         page = null;
       }
-      phantesta.destructiveClearAllSnapshots();
     }));
 
     describe('functionality', function() {
@@ -83,6 +83,24 @@ describe('phantesta', function() {
         await phantesta.acceptDiff('image1');
         await phantesta.expectStable(page, 'html', 'image1');
       }), 50000);
+      it('should be able to diff between different colors', syncify(async function() {
+        var url1 = htmlServer.getUrl('/html/color.html?color=b7dfeb');
+        var url2 = htmlServer.getUrl('/html/color.html?color=87cade');
+        var url3 = htmlServer.getUrl('/html/color.html?color=cccccc');
+
+        await page.open(url1);
+        await phantesta.expectUnstable(page, 'html', 'colorlighter');
+        await sleep(500);
+        await phantesta.acceptDiff('colorlighter');
+        await page.open(url2);
+        await phantesta.expectUnstable(page, 'html', 'colorlight');
+        await phantesta.acceptDiff('colorlight');
+        await page.open(url3);
+        await phantesta.expectUnstable(page, 'html', 'colorgrey');
+        await phantesta.acceptDiff('colorgrey');
+        await phantesta.expectDiff('colorlighter', 'colorlight');
+        await phantesta.expectDiff('colorlighter', 'colorgrey');
+      }), 20000);
       it('should serve diffs correctly', syncify(async function() {
         phantesta.startServer({host: 'localhost', port: '7992'});
         var url1 = htmlServer.getUrl('/html/page1.html');
