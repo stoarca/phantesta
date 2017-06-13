@@ -1,0 +1,11 @@
+<div id="my-div" style="height:500px;width:500px;background-color:red">
+  hello
+</div>
+<script>
+  setTimeout(function() {
+    document.getElementById('my-div').style.backgroundColor = "blue";
+  }, 5000);
+  setTimeout(function() {
+    document.getElementById('my-div').style.backgroundColor = "red";
+  }, 10000);
+</script>

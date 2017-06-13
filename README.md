@@ -108,17 +108,29 @@ failed snapshots, with the option to view and accept diffs to snapshots.
 Override the expectToBe and expectNotToBe calls with methods from your test
 framework if you're not using jasmine.
 
-### async Phantesta.prototype.expectStable(page, target, name)
+### async Phantesta.prototype.expectStable(page, target, name, modifierCallback)
 
  - `page` is one of:
    - the node-phantomjs page of which a screenshot is to be taken
    - the selenium driver of which a screenshot is to be taken
  - `target` is a selector used to target a portion of the page
  - `name` is a unique name for the snapshot
+ - `modifierCallback` *(optional)* is an asynchronous function that will be called with the full path of the `.new.png` before it is compared
 
 Passes if the screenshot is unchanged relative to the good `name` screenshot.
 Fails and leaves `.new.png` and `.diff.png` images in the `screenshotPath` if
 the screenshot has changed relative to the good `name` screenshot
+
+### async Phantesta.prototype.expectStablePolled(page, target, name, attempts, wait, modifierCallback)
+
+ - `page` is one of:
+   - the node-phantomjs page of which a screenshot is to be taken
+   - the selenium driver of which a screenshot is to be taken
+ - `target` is a selector used to target a portion of the page
+ - `name` is a unique name for the snapshot
+ - `attempts` *(optional: defaults to 10 attempts)* is a positive integer specifying the number of attempts to make
+ - `wait` *(optional: defaults to 1000ms)* is duration in milliseconds specifying how long to wait between attempts
+ - `modifierCallback` *(optional)* is an asynchronous function that will be called with the full path of the `.new.png` before it is compared
 
 ### async Phantesta.prototype.expectSame(name1, name2)
 
