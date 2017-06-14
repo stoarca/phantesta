@@ -63,6 +63,13 @@ URL: https://github.com/Huddle/Resemble.js
 	var useCrossOrigin = true;
 	var document = typeof window != "undefined" ? window.document : {};
 
+  var skipPixel = function(px, offset, d1, d2) {
+    px[offset] = 0;
+    px[offset + 1] = 255;
+    px[offset + 2] = 255;
+    px[offset + 3] = 255;
+  };
+
 	var resemble = function( fileData ){
 
 		var data = {};
@@ -81,6 +88,31 @@ URL: https://github.com/Huddle/Resemble.js
 		var ignoreAntialiasing = false;
 		var ignoreColors = false;
 		var scaleToSameSize = false;
+
+    var skipBoxes = [];
+
+    function setNewSkipBoxes(boxes) {
+      skipBoxes = [];
+      for (var i = 0; i < boxes.length; i++) {
+        var box = boxes[i];
+        skipBoxes.push({
+          top: box.y,
+          bottom: box.y + box.h,
+          left: box.x,
+          right: box.x + box.w
+        });
+      }
+    }
+
+    function isInSkipBoxes(x, y) {
+      for (var i = 0; i < skipBoxes.length; i++) {
+        var box = skipBoxes[i];
+        if (box.left <= x && x <= box.right && box.top <= y && y <= box.bottom) {
+          return true;
+        }
+      }
+      return false;
+    }
 
 		function triggerDataUpdate(){
 			var len = updateCallbackArray.length;
@@ -422,6 +454,12 @@ URL: https://github.com/Huddle/Resemble.js
 
 				var offset = (verticalPos*width + horizontalPos) * 4;
 
+        // color the pixels that we skipped cyan
+        if (isInSkipBoxes(horizontalPos, verticalPos)) {
+          skipPixel(targetPix, offset, pixel1, pixel2);
+          return;
+        }
+
 				if (!getPixelInfo(pixel1, data1, offset, 1) || !getPixelInfo(pixel2, data2, offset, 2)) {
 					return;
 				}
@@ -641,6 +679,13 @@ URL: https://github.com/Huddle/Resemble.js
 					if(hasMethod) { param(); }
 					return self;
 				},
+        skip: function(boxes) {
+
+          setNewSkipBoxes(boxes);
+
+          if(hasMethod) { param(); }
+					return self;
+        },
 				repaint: function(){
 					if(hasMethod) { param(); }
 					return self;
