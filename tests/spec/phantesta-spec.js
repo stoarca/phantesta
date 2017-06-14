@@ -151,25 +151,12 @@ describe('phantesta', function() {
         var response = JSON.parse(await rp('http://localhost:7992/list_of_diffs'));
         expect(response.diffs.length).toBe(0);
       }), 20000);
-      it('should test modifer callback', syncify(async function() {
-        var url = htmlServer.getUrl('/html/page1.html');
-        await page.open(url);
-        var value = 'not set';
-        await phantesta.expectUnstable(page, 'html', 'modifier_page');
-        await phantesta.acceptDiff('modifier_page');
-        await phantesta.expectStable(page, 'html', 'modifier_page', async function(filename) {
-          value = filename;
-        });
-        expect(value).toBe(path.resolve(__dirname, '../screenshots', 'modifier_page.new.png'));
-      }), 20000);
       it('should test polled screenshots', syncify(async function() {
         var url = htmlServer.getUrl('/html/animation.html');
         await page.open(url);
         await phantesta.expectUnstable(page, 'html', 'animation');
         await phantesta.acceptDiff('animation');
-        console.log('waiting for a bit');
         await sleep(6000);
-        console.log('started polling');
         await phantesta.expectStablePolled(page, 'html', 'animation');
       }), 60000);
     });
@@ -225,6 +212,17 @@ describe('phantesta', function() {
       await phantesta.expectSame('selenium_page1', 'selenium_page1_2');
       await phantesta.expectDiff('selenium_page1', 'selenium_page2');
     }), 20000);
+    it('should test skip boxes success', syncify(async function() {
+      var url1 = htmlServer.getUrl('/html/some_diff1.html');
+      var url2 = htmlServer.getUrl('/html/some_diff2.html');
+      await page.get(url1);
+      await phantesta.expectUnstable(page, 'html', 'some_diff');
+      await phantesta.acceptDiff('some_diff');
+      await page.get(url2);
+      await phantesta.expectStable(page, 'html', 'some_diff', [
+        { x: 100, y: 100, w: 100, h: 100 }
+      ]);
+    }), 60000);
     describe('should test one level grouping', function() {
       beforeEach(function() {
         phantesta.group('group1');
