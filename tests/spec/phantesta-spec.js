@@ -151,6 +151,27 @@ describe('phantesta', function() {
         var response = JSON.parse(await rp('http://localhost:7992/list_of_diffs'));
         expect(response.diffs.length).toBe(0);
       }), 20000);
+      it('should test modifer callback', syncify(async function() {
+        var url = htmlServer.getUrl('/html/page1.html');
+        await page.open(url);
+        var value = 'not set';
+        await phantesta.expectUnstable(page, 'html', 'modifier_page');
+        await phantesta.acceptDiff('modifier_page');
+        await phantesta.expectStable(page, 'html', 'modifier_page', async function(filename) {
+          value = filename;
+        });
+        expect(value).toBe(path.resolve(__dirname, '../screenshots', 'modifier_page.new.png'));
+      }), 20000);
+      it('should test polled screenshots', syncify(async function() {
+        var url = htmlServer.getUrl('/html/animation.html');
+        await page.open(url);
+        await phantesta.expectUnstable(page, 'html', 'animation');
+        await phantesta.acceptDiff('animation');
+        console.log('waiting for a bit');
+        await sleep(6000);
+        console.log('started polling');
+        await phantesta.expectStablePolled(page, 'html', 'animation');
+      }), 60000);
     });
   });
   describe('selenium', function() {
@@ -204,7 +225,6 @@ describe('phantesta', function() {
       await phantesta.expectSame('selenium_page1', 'selenium_page1_2');
       await phantesta.expectDiff('selenium_page1', 'selenium_page2');
     }), 20000);
-
     describe('should test one level grouping', function() {
       beforeEach(function() {
         phantesta.group('group1');

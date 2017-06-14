@@ -32,6 +32,11 @@ var isPhantom = function(page) {
   return !!page.render;
 };
 
+var isPositiveInt = function(str) {
+    var n = Math.floor(Number(str));
+    return String(n) === str && n > 0;
+};
+
 var Phantesta = function(diffPage, options) {
   this.diffPage = diffPage;
   var defaults = {
@@ -72,7 +77,7 @@ Phantesta.prototype.getNewPath = function(name) {
 Phantesta.prototype.getDiffPath = function(name) {
   return path.resolve(this.getCurrentPath(), name + this.options.diffExt);
 };
-Phantesta.prototype.screenshot = async function(page, target, filename) {
+Phantesta.prototype.screenshot = async function(page, target, filename, modifierCallback) {
   if (isPhantom(page)) {
     var prevClip = await page.property('clipRect');
     var clipRect = await page.evaluate(function(target) {
@@ -98,9 +103,12 @@ Phantesta.prototype.screenshot = async function(page, target, filename) {
   } else {
     throw new Error('Unable to determine type of page');
   }
+  if (typeof(modifierCallback) == 'function') {
+    await modifierCallback(filename);
+  }
 };
-Phantesta.prototype.expectStable = async function(page, target, name) {
-  await this.screenshot(page, target, this.getNewPath(name));
+Phantesta.prototype.expectStable = async function(page, target, name, modifierCallback) {
+  await this.screenshot(page, target, this.getNewPath(name), modifierCallback);
   await this.testSingle({
     type: 'stable',
     name: name,
@@ -112,6 +120,25 @@ Phantesta.prototype.expectUnstable = async function(page, target, name) {
     type: 'unstable',
     name: name,
   });
+};
+Phantesta.prototype.expectStablePolled = async function(page, target, name, attempts, wait, modifierCallback) {
+  attempts = isPositiveInt(attempts) ? attempts : 10;
+  wait = isPositiveInt(wait) ? wait : 1000;
+  var result;
+  while (true) {
+    await this.screenshot(page, target, this.getNewPath(name), modifierCallback);
+    result = await this.testSingle({
+      type: 'stable',
+      name: name,
+    }, true);
+    if (result !== 'diff detected' || attempts === 0) {
+      break;
+    }
+    attempts -= 1;
+    await new Promise(function(resolve) {
+      setTimeout(resolve, wait);
+    });
+  }
 };
 Phantesta.prototype.expectSame = async function(name1, name2) {
   if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2))) {
@@ -187,7 +214,7 @@ Phantesta.prototype.ssInfoExpect = function(ssInfo, actual, expected) {
     this.options.expectNotToBe(actual, expected);
   }
 }
-Phantesta.prototype.testSingle = async function(ssInfo) {
+Phantesta.prototype.testSingle = async function(ssInfo, allowDiff) {
   if (!fs.existsSync(this.getGoodPath(ssInfo.name))) {
     copy(this.getNewPath(ssInfo.name), this.getDiffPath(ssInfo.name));
     this.ssInfoExpect(
@@ -197,6 +224,9 @@ Phantesta.prototype.testSingle = async function(ssInfo) {
     return;
   }
   if (await this.isDiff(this.getNewPath(ssInfo.name), this.getGoodPath(ssInfo.name))) {
+    if (allowDiff) {
+      return 'diff detected';
+    }
     await this.screenshot(
         this.diffPage, '#result > img', this.getDiffPath(ssInfo.name));
     var showPaths = JSON.stringify({
