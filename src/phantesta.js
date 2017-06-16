@@ -81,7 +81,20 @@ Phantesta.prototype.screenshot = async function(page, target, filename) {
   if (isPhantom(page)) {
     var prevClip = await page.property('clipRect');
     var clipRect = await page.evaluate(function(target) {
-      return document.querySelectorAll(target)[0].getBoundingClientRect();
+      if (target === null) {
+        return {
+          left: 0,
+          top: 0,
+          right: document.body.scrollWidth,
+          bottom: document.body.scrollHeight,
+          x: 0,
+          y: 0,
+          width: document.body.scrollWidth,
+          height: document.body.scrollHeight
+        }
+      } else {
+        return document.querySelectorAll(target)[0].getBoundingClientRect();
+      }
     }, target);
     if (!clipRect) {
       console.log(
@@ -96,8 +109,13 @@ Phantesta.prototype.screenshot = async function(page, target, filename) {
     await page.render(filename);
     await page.property('clipRect', prevClip);
   } else if (isSelenium(page)) {
-    var element = await page.findElement(By.css(target));
-    var image = await element.takeScreenshot();
+    var image;
+    if (target === null) {
+      image = await page.takeScreenshot();
+    } else {
+      var element = await page.findElement(By.css(target));
+      image = await element.takeScreenshot();
+    }
     child_process.spawnSync('mkdir', ['-p', path.dirname(filename)]);
     fs.writeFileSync(filename, image, 'base64');
   } else {

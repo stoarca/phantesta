@@ -34,7 +34,7 @@ describe('phantesta', function() {
     }));
     beforeEach(syncify(async function() {
       phantesta = new Phantesta(diffPage, {
-        screenshotPath: path.resolve(__dirname, '../screenshots'),
+        screenshotPath: path.resolve(__dirname, '../screenshots/unsaved'),
       });
       phantesta.destructiveClearAllSnapshots();
       page = await createPage(instance);
@@ -159,6 +159,14 @@ describe('phantesta', function() {
         await sleep(6000);
         await phantesta.expectStablePolled(page, 'html', 'animation');
       }), 60000);
+      it('should take document screenshot', syncify(async function() {
+        var phantesta2 = new Phantesta(diffPage, {
+          screenshotPath: path.resolve(__dirname, '../screenshots/saved'),
+        });
+        var url = htmlServer.getUrl('/html/long.html');
+        await page.open(url);
+        await phantesta2.expectStable(page, null, 'phantomjs_full_page');
+      }), 30000);
     });
   });
   describe('selenium', function() {
@@ -186,7 +194,7 @@ describe('phantesta', function() {
     }));
     beforeEach(syncify(async function() {
       phantesta = new Phantesta(diffPage, {
-        screenshotPath: path.resolve(__dirname, '../screenshots'),
+        screenshotPath: path.resolve(__dirname, '../screenshots/unsaved'),
       });
       page = await createDriver();
     }));
@@ -223,6 +231,14 @@ describe('phantesta', function() {
         { x: 100, y: 100, w: 100, h: 100 }
       ]);
     }), 60000);
+    it('should take document screenshot', syncify(async function() {
+      var phantesta2 = new Phantesta(diffPage, {
+        screenshotPath: path.resolve(__dirname, '../screenshots/saved'),
+      });
+      var url = htmlServer.getUrl('/html/long.html');
+      await page.get(url);
+      await phantesta2.expectStable(page, null, 'selenium_full_page');
+    }), 30000);
     describe('should test one level grouping', function() {
       beforeEach(function() {
         phantesta.group('group1');
@@ -233,7 +249,7 @@ describe('phantesta', function() {
       });
 
       it('test current path', function() {
-        expect(phantesta.getCurrentPath()).toBe(path.resolve(__dirname, '../screenshots', 'group1'));
+        expect(phantesta.getCurrentPath()).toBe(path.resolve(__dirname, '../screenshots/unsaved', 'group1'));
       });
 
       it('test groups', syncify(async function() {
@@ -256,7 +272,7 @@ describe('phantesta', function() {
         });
 
         it('test current path', function() {
-          expect(phantesta.getCurrentPath()).toBe(path.resolve(__dirname, '../screenshots', 'group1', 'group2'));
+          expect(phantesta.getCurrentPath()).toBe(path.resolve(__dirname, '../screenshots/unsaved', 'group1', 'group2'));
         });
 
         it('test groups', syncify(async function() {
