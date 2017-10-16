@@ -101,7 +101,7 @@ describe('phantesta', function() {
         await phantesta.expectDiff('colorlighter', 'colorlight');
         await phantesta.expectDiff('colorlighter', 'colorgrey');
       }), 20000);
-      it('should serve diffs correctly', syncify(async function() {
+      fit('should serve diffs correctly', syncify(async function() {
         phantesta.startServer({host: 'localhost', port: '7992'});
         var url1 = htmlServer.getUrl('/html/page1.html');
         var url2 = htmlServer.getUrl('/html/page2.html');
@@ -125,6 +125,15 @@ describe('phantesta', function() {
         expect(response.diffs[1].goodSrc).toBeTruthy();
         expect(response.diffs[1].newSrc).toBeTruthy();
         expect(response.diffs[1].diffSrc).toBeTruthy();
+
+        await phantesta.expectUnstable(page, 'html', 'page0');
+        var response = JSON.parse(await rp('http://localhost:7992/list_of_diffs'));
+        expect(response.diffs.length).toBe(3);
+        // should be sorted by last modified time, not alpha
+        expect(response.diffs[0].name).toBe('page1_2');
+        expect(response.diffs[1].name).toBe('page1');
+        expect(response.diffs[2].name).toBe('page0');
+        await phantesta.acceptDiff('page0');
 
         response.diffs[1].replace = true;
         var response = await rp({

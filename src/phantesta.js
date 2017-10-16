@@ -270,6 +270,16 @@ Phantesta.prototype.destructiveClearAllSnapshots = async function() {
 Phantesta.prototype.listOfDiffFiles = function(f) {
   var dir = path.resolve(this.options.screenshotPath, '**/*' + this.options.diffExt);
   var failedFiles = glob(dir, function(err, files) {
+    files = files.map(function(filename) {
+      return {
+        name: filename,
+        time: fs.statSync(filename).mtime.getTime(),
+      };
+    }).sort(function(a, b) {
+      return a.time - b.time;
+    }).map(function(v) {
+      return v.name;
+    });
     f(files);
   });
 };
