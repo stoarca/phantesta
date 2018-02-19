@@ -179,6 +179,10 @@ Phantesta.prototype.expectDiff = async function(name1, name2, boxes) {
 };
 Phantesta.prototype.isDiff = async function(filename1, filename2, boxes) {
   boxes = boxes || [];
+  if (boxes.length > 0 && typeof boxes[0] === 'string') {
+    // convert css selectors to coordinates
+    // TODO: LOH
+  }
   if (isPhantom(this.diffPage)) {
     await this.diffPage.open('about:blank');
     var url = 'file:///' + path.resolve(__dirname, '../resemble.html');

@@ -2,3 +2,5 @@ node_modules
 npm-debug.log
 dist/*
 tests/screenshots/unsaved/*
+*.diff.png
+*.new.png
