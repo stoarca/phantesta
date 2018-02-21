@@ -213,14 +213,9 @@ Phantesta.prototype.isDiff = async function(filename1, filename2, boxes) {
     }, boxes);
     var ret = null;
     while (ret === null) {
-      try {
-        ret = await this.diffPage.executeScript(function() {
-          return window.imageDiffer.getResult();
-        });
-      } catch (e) {
-        // intentionally eat error, result may be not ready yet
-        console.log(e);
-      }
+      ret = await this.diffPage.executeScript(function() {
+        return window.imageDiffer.getResult();
+      });
     }
     return ret.rawMisMatchPercentage > 0;
   } else {

@@ -1,4 +1,5 @@
 var ImageDiffer = function() {
+  this.waiting = false;
   this.result = null;
   // TODO: kinda in the wrong place
   resemble.outputSettings({
@@ -9,6 +10,7 @@ var ImageDiffer = function() {
 };
 ImageDiffer.prototype.doDiff = function(boxes) {
   var self = this;
+  this.waiting = true;
   this.result = null;
   var a = document.getElementById('a').files[0];
   var b = document.getElementById('b').files[0];
@@ -17,6 +19,7 @@ ImageDiffer.prototype.doDiff = function(boxes) {
     .ignoreNothing()
     .skip(boxes)
     .onComplete(function(result) {
+      self.waiting = false;
       self.result = result;
       var image = new Image();
       document.getElementById('result').appendChild(image);
@@ -24,7 +27,7 @@ ImageDiffer.prototype.doDiff = function(boxes) {
     });
 };
 ImageDiffer.prototype.getResult = function() {
-  if (!this.result) {
+  if (!this.result && !this.waiting) {
     throw new Error('result is not ready yet!');
   }
   return this.result;
