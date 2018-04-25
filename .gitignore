@@ -4,3 +4,5 @@ dist/*
 tests/screenshots/unsaved/*
 *.diff.png
 *.new.png
+.idea/
+*.iml
