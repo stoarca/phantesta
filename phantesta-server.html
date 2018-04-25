@@ -53,6 +53,17 @@
   </style>
   <script>
     setTimeout(function() {
+      window.onbeforeunload = function() {
+        //warn the user if they are about to navigate away with any selections
+        var selectedDiffs = 0;
+        for(var i = 0; i < diffs.length; i++) {
+          if(diffs[i].replace) {
+            selectedDiffs += 1;
+          }
+        }
+        return selectedDiffs > 0;
+      };
+
       var wrapCell = function(element) {
         var cell = document.createElement('td');
         cell.appendChild(element);
@@ -61,6 +72,7 @@
       var addImageRow = function(container, imgSrc) {
         var a = document.createElement('a');
         a.href = imgSrc;
+        a.target = '_blank';
         var image = document.createElement('img');
         image.src = imgSrc;
         a.appendChild(image);
