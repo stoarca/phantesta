@@ -327,7 +327,7 @@ Phantesta.prototype.startServer = function(options) {
 
   var app = express();
 
-  app.use(bodyParser.json());
+  app.use(bodyParser.json({limit: '200mb'}));
   app.get('/', function(req, resp) {
     resp.sendFile(path.resolve(__dirname, '../phantesta-server.html'));
   });
