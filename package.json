@@ -27,7 +27,7 @@
     "phantom": "4.0.0",
     "q": "1.4.1",
     "request": "2.79.0",
-    "restify": "4.3.0",
+    "restify": "7.1.1",
     "selenium-webdriver": "3.6.0"
   },
   "devDependencies": {
