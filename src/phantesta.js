@@ -118,6 +118,7 @@ Phantesta.prototype.screenshot = async function(page, target, filename) {
     }
     child_process.spawnSync('mkdir', ['-p', path.dirname(filename)]);
     fs.writeFileSync(filename, image, 'base64');
+
   } else {
     throw new Error('Unable to determine type of page');
   }
@@ -195,9 +196,17 @@ Phantesta.prototype.isDiff = async function(filename1, filename2, boxes) {
       return window.imageDiffer.doDiff(arguments[0]);
     }, boxes);
     var ret = null;
-    while (ret === null) {
-      ret = await this.diffPage.evaluate(function() {
-        return window.imageDiffer.getResult();
+    while (ret === null || ret === 'RESULT NOT READY') {
+      ret = await this.diffPage.evaluate(function () {
+        try {
+          return window.imageDiffer.getResult();
+        } catch (e) {
+          if (e.message === 'result is not ready yet!') {
+            return 'RESULT NOT READY'
+          } else {
+            console.error(e);
+          }
+        }
       });
     }
     return ret.rawMisMatchPercentage > 0;

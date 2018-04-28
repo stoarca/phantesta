@@ -27,7 +27,7 @@ ImageDiffer.prototype.doDiff = function(boxes) {
     });
 };
 ImageDiffer.prototype.getResult = function() {
-  if (!this.result && !this.waiting) {
+  if (!this.result && this.waiting) {
     throw new Error('result is not ready yet!');
   }
   return this.result;
