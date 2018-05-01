@@ -7,8 +7,18 @@ var ImageDiffer = function() {
     largeImageThreshold: 0,
     useCrossOrigin: false,
   });
+  this.skipBoxes = [];
+  this.includeBoxes = [];
 };
-ImageDiffer.prototype.doDiff = function(boxes) {
+ImageDiffer.prototype.censorBoxes = function(boxes) {
+  this.skipBoxes = boxes || [];
+  return this;
+};
+ImageDiffer.prototype.includeOnlyBoxes = function(boxes) {
+  this.includeBoxes = boxes || [];
+  return this;
+};
+ImageDiffer.prototype.doDiff = function() {
   var self = this;
   this.waiting = true;
   this.result = null;
@@ -17,7 +27,8 @@ ImageDiffer.prototype.doDiff = function(boxes) {
   return resemble(a)
     .compareTo(b)
     .ignoreNothing()
-    .skip(boxes)
+    .skip(this.skipBoxes)
+    .include(this.includeBoxes)
     .onComplete(function(result) {
       self.waiting = false;
       self.result = result;
@@ -25,6 +36,9 @@ ImageDiffer.prototype.doDiff = function(boxes) {
       document.getElementById('result').appendChild(image);
       image.src = result.getImageDataUrl();
     });
+}
+ImageDiffer.prototype.isReady = function() {
+  return !this.waiting;
 };
 ImageDiffer.prototype.getResult = function() {
   if (!this.result && this.waiting) {

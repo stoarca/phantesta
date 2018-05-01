@@ -89,9 +89,10 @@ URL: https://github.com/Huddle/Resemble.js
 		var ignoreColors = false;
 		var scaleToSameSize = false;
 
-    var skipBoxes = [];
+    var skipBoxes = []; // ADDED BY PHANTESTA
+    var includeBoxes = []; // ADDED BY PHANTESTA
 
-    function setNewSkipBoxes(boxes) {
+    function setNewSkipBoxes(boxes) { // ADDED BY PHANTESTA
       skipBoxes = [];
       for (var i = 0; i < boxes.length; i++) {
         var box = boxes[i];
@@ -104,13 +105,38 @@ URL: https://github.com/Huddle/Resemble.js
       }
     }
 
-    function isInSkipBoxes(x, y) {
+    function setNewIncludeBoxes(boxes) { // ADDED BY PHANTESTA
+      includeBoxes = [];
+      for (var i = 0; i < boxes.length; i++) {
+        var box = boxes[i];
+        includeBoxes.push({
+          top: box.y,
+          bottom: box.y + box.h,
+          left: box.x,
+          right: box.x + box.w
+        });
+      }
+    }
+
+    function isInSkipBoxes(x, y) { // ADDED BY PHANTESTA
       for (var i = 0; i < skipBoxes.length; i++) {
         var box = skipBoxes[i];
-        if (box.left <= x && x <= box.right && box.top <= y && y <= box.bottom) {
+        if (box.left <= x && x < box.right && box.top <= y && y < box.bottom) {
           return true;
         }
       }
+
+      if(includeBoxes.length > 0) {
+      	//some explicit include boxes were defined
+      	var inIncludeBox = false;
+        for (var i = 0; i < includeBoxes.length; i++) {
+        	var box = includeBoxes[i];
+          if (box.left <= x && x < box.right && box.top <= y && y < box.bottom) {
+            inIncludeBox = true;
+          }
+				}
+      	return !inIncludeBox;
+			}
       return false;
     }
 
@@ -455,7 +481,7 @@ URL: https://github.com/Huddle/Resemble.js
 				var offset = (verticalPos*width + horizontalPos) * 4;
 
         // color the pixels that we skipped cyan
-        if (isInSkipBoxes(horizontalPos, verticalPos)) {
+        if (isInSkipBoxes(horizontalPos, verticalPos)) { // ADDED BY PHANTESTA
           skipPixel(targetPix, offset, pixel1, pixel2);
           return;
         }
@@ -679,13 +705,19 @@ URL: https://github.com/Huddle/Resemble.js
 					if(hasMethod) { param(); }
 					return self;
 				},
-        skip: function(boxes) {
+        skip: function(boxes) { // ADDED BY PHANTESTA
 
           setNewSkipBoxes(boxes);
 
           if(hasMethod) { param(); }
 					return self;
         },
+				include: function(boxes) { // ADDED BY PHANTESTA
+					setNewIncludeBoxes(boxes);
+
+          if(hasMethod) { param(); }
+          return self;
+				},
 				repaint: function(){
 					if(hasMethod) { param(); }
 					return self;

@@ -53,15 +53,15 @@ describe('phantesta', function() {
         var url2 = htmlServer.getUrl('/html/page2.html');
 
         await page.open(url1);
-        await phantesta.expectUnstable(page, 'html', 'page1');
-        await phantesta.expectUnstable(page, 'html', 'page1_2');
+        await phantesta.expect(page).toNotMatchScreenshot('page1');
+        await phantesta.expect(page).toNotMatchScreenshot('page1_2');
         await phantesta.acceptDiff('page1');
         await phantesta.acceptDiff('page1_2');
-        await phantesta.expectStable(page, 'html', 'page1');
-        await phantesta.expectStable(page, 'html', 'page1_2');
+        await phantesta.expect(page).toMatchScreenshot('page1');
+        await phantesta.expect(page).toMatchScreenshot('page1_2');
 
         await page.open(url2);
-        await phantesta.expectUnstable(page, 'html', 'page2');
+        await phantesta.expect(page).toNotMatchScreenshot('page2');
         await phantesta.acceptDiff('page2');
         await phantesta.expectSame('page1', 'page1_2');
         await phantesta.expectDiff('page1', 'page2');
@@ -70,18 +70,18 @@ describe('phantesta', function() {
         var url1 = htmlServer.getUrl('/html/image.html');
 
         await page.open(url1);
-        await phantesta.expectUnstable(page, 'html', 'image1');
+        await phantesta.expect(page).toNotMatchScreenshot('image1');
         await phantesta.acceptDiff('image1');
-        await phantesta.expectStable(page, 'html', 'image1');
+        await phantesta.expect(page).toMatchScreenshot('image1');
 
         await page.evaluate(function() {
           var t = document.createTextNode('blah');
           document.body.appendChild(t);
         });
 
-        await phantesta.expectUnstable(page, 'html', 'image1');
+        await phantesta.expect(page).toNotMatchScreenshot('image1');
         await phantesta.acceptDiff('image1');
-        await phantesta.expectStable(page, 'html', 'image1');
+        await phantesta.expect(page).toMatchScreenshot('image1');
       }), 50000);
       it('should be able to diff between different colors', syncify(async function() {
         var url1 = htmlServer.getUrl('/html/color.html?color=b7dfeb');
@@ -89,14 +89,14 @@ describe('phantesta', function() {
         var url3 = htmlServer.getUrl('/html/color.html?color=cccccc');
 
         await page.open(url1);
-        await phantesta.expectUnstable(page, 'html', 'colorlighter');
+        await phantesta.expect(page).toNotMatchScreenshot('colorlighter');
         await sleep(500);
         await phantesta.acceptDiff('colorlighter');
         await page.open(url2);
-        await phantesta.expectUnstable(page, 'html', 'colorlight');
+        await phantesta.expect(page).toNotMatchScreenshot('colorlight');
         await phantesta.acceptDiff('colorlight');
         await page.open(url3);
-        await phantesta.expectUnstable(page, 'html', 'colorgrey');
+        await phantesta.expect(page).toNotMatchScreenshot('colorgrey');
         await phantesta.acceptDiff('colorgrey');
         await phantesta.expectDiff('colorlighter', 'colorlight');
         await phantesta.expectDiff('colorlighter', 'colorgrey');
@@ -107,9 +107,9 @@ describe('phantesta', function() {
         var url2 = htmlServer.getUrl('/html/page2.html');
 
         await page.open(url1);
-        await phantesta.expectUnstable(page, 'html', 'page1');
+        await phantesta.expect(page).toNotMatchScreenshot('page1');
         await phantesta.acceptDiff('page1');
-        await phantesta.expectUnstable(page, 'html', 'page1_2');
+        await phantesta.expect(page).toNotMatchScreenshot('page1_2');
         var response = JSON.parse(await rp('http://localhost:7992/list_of_diffs'));
         expect(response.diffs.length).toBe(1);
         expect(response.diffs[0].name).toBe('page1_2');
@@ -118,7 +118,7 @@ describe('phantesta', function() {
         expect(response.diffs[0].diffSrc).toBeTruthy();
 
         await page.open(url2);
-        await phantesta.expectUnstable(page, 'html', 'page1');
+        await phantesta.expect(page).toNotMatchScreenshot('page1');
         var response = JSON.parse(await rp('http://localhost:7992/list_of_diffs'));
         expect(response.diffs.length).toBe(2);
         expect(response.diffs[1].name).toBe('page1');
@@ -126,7 +126,7 @@ describe('phantesta', function() {
         expect(response.diffs[1].newSrc).toBeTruthy();
         expect(response.diffs[1].diffSrc).toBeTruthy();
 
-        await phantesta.expectUnstable(page, 'html', 'page0');
+        await phantesta.expect(page).toNotMatchScreenshot('page0');
         var response = JSON.parse(await rp('http://localhost:7992/list_of_diffs'));
         expect(response.diffs.length).toBe(3);
         // should be sorted by last modified time, not alpha
@@ -163,10 +163,10 @@ describe('phantesta', function() {
       it('should test polled screenshots', syncify(async function() {
         var url = htmlServer.getUrl('/html/animation.html');
         await page.open(url);
-        await phantesta.expectUnstable(page, 'html', 'animation');
+        await phantesta.expect(page).toNotMatchScreenshot('animation');
         await phantesta.acceptDiff('animation');
         await sleep(6000);
-        await phantesta.expectStablePolled(page, 'html', 'animation');
+        await phantesta.expect(page).toMatchScreenshot('animation', {attempts: 10, wait: 1000});
       }), 60000);
       it('should take document screenshot', syncify(async function() {
         var phantesta2 = new Phantesta(diffPage, {
@@ -174,7 +174,7 @@ describe('phantesta', function() {
         });
         var url = htmlServer.getUrl('/html/long.html');
         await page.open(url);
-        await phantesta2.expectStable(page, null, 'phantomjs_full_page');
+        await phantesta2.expect(page, null).toMatchScreenshot('phantomjs_full_page');
       }), 30000);
     });
   });
@@ -215,29 +215,41 @@ describe('phantesta', function() {
       var url2 = htmlServer.getUrl('/html/page2.html');
 
       await page.get(url1);
-      await phantesta.expectUnstable(page, 'html', 'selenium_page1');
-      await phantesta.expectUnstable(page, 'html', 'selenium_page1_2');
+      await phantesta.expect(page).toNotMatchScreenshot('selenium_page1');
+      await phantesta.expect(page).toNotMatchScreenshot('selenium_page1_2');
       await phantesta.acceptDiff('selenium_page1');
       await phantesta.acceptDiff('selenium_page1_2');
-      await phantesta.expectStable(page, 'html', 'selenium_page1');
-      await phantesta.expectStable(page, 'html', 'selenium_page1_2');
+      await phantesta.expect(page).toMatchScreenshot('selenium_page1');
+      await phantesta.expect(page).toMatchScreenshot('selenium_page1_2');
 
       await page.get(url2);
-      await phantesta.expectUnstable(page, 'html', 'selenium_page2');
+      await phantesta.expect(page).toNotMatchScreenshot('selenium_page2');
       await phantesta.acceptDiff('selenium_page2');
       await phantesta.expectSame('selenium_page1', 'selenium_page1_2');
       await phantesta.expectDiff('selenium_page1', 'selenium_page2');
     }), 20000);
-    it('should test skip boxes success', syncify(async function() {
-      var url1 = htmlServer.getUrl('/html/some_diff1.html');
-      var url2 = htmlServer.getUrl('/html/some_diff2.html');
+    it('should be able to skip diffs', syncify(async function() {
+      var url1 = htmlServer.getUrl('/html/outer_diff1.html');
+      var url2 = htmlServer.getUrl('/html/outer_diff2.html');
       await page.get(url1);
-      await phantesta.expectUnstable(page, 'html', 'some_diff');
-      await phantesta.acceptDiff('some_diff');
+      await phantesta.expect(page).toNotMatchScreenshot('exclude_diff');
+      await phantesta.acceptDiff('exclude_diff');
       await page.get(url2);
-      await phantesta.expectStable(page, 'html', 'some_diff', [
-        { x: 100, y: 100, w: 100, h: 100 }
-      ]);
+      await phantesta.expect(page).censorRect(100, 0, 100, 100).toMatchScreenshot('exclude_diff');
+      await phantesta.expect(page).censorMatching('#right-changing-div').toMatchScreenshot('exclude_diff');
+    }), 60000);
+    it('should be able to select specific diffs', syncify(async function() {
+      //we load two divs that are side by side, where the right-most of the two changes
+      var url1 = htmlServer.getUrl('/html/outer_diff1.html');
+      var url2 = htmlServer.getUrl('/html/outer_diff2.html');
+      await page.get(url1);
+      await phantesta.expect(page).toNotMatchScreenshot('include_diff');
+      await phantesta.acceptDiff('include_diff');
+      await page.get(url2);
+      await phantesta.expect(page).includeOnlyRect(0, 0, 100, 100).toMatchScreenshot('include_diff');
+      await phantesta.expect(page).includeOnlyRect(0, 0, 101, 100).toNotMatchScreenshot('include_diff');
+      await phantesta.expect(page).includeOnlyMatching('#left-unchanging-div').toMatchScreenshot('include_diff');
+      await phantesta.expect(page).includeOnlyMatching('#right-changing-div').toNotMatchScreenshot('include_diff');
     }), 60000);
     it('should take document screenshot', syncify(async function() {
       var phantesta2 = new Phantesta(diffPage, {
@@ -245,7 +257,7 @@ describe('phantesta', function() {
       });
       var url = htmlServer.getUrl('/html/long.html');
       await page.get(url);
-      await phantesta2.expectStable(page, null, 'selenium_full_page');
+      await phantesta2.expect(page, null).toMatchScreenshot('selenium_full_page');
     }), 30000);
     describe('should test one level grouping', function() {
       beforeEach(function() {
@@ -262,11 +274,10 @@ describe('phantesta', function() {
 
       it('test groups', syncify(async function() {
         var url1 = htmlServer.getUrl('/html/page1.html');
-        var url2 = htmlServer.getUrl('/html/page2.html');
 
         await page.get(url1);
-        await phantesta.expectUnstable(page, 'html', 'group1_page1');
-        await phantesta.expectUnstable(page, 'html', 'group1_page2');
+        await phantesta.expect(page).toNotMatchScreenshot('group1_page1');
+        await phantesta.expect(page).toNotMatchScreenshot('group1_page2');
         await phantesta.acceptDiff('group1_page1', 'group1_page2');
       }));
 
@@ -285,11 +296,10 @@ describe('phantesta', function() {
 
         it('test groups', syncify(async function() {
           var url1 = htmlServer.getUrl('/html/page1.html');
-          var url2 = htmlServer.getUrl('/html/page2.html');
 
           await page.get(url1);
-          await phantesta.expectUnstable(page, 'html', 'group2_page1');
-          await phantesta.expectUnstable(page, 'html', 'group2_page2');
+          await phantesta.expect(page).toNotMatchScreenshot('group2_page1');
+          await phantesta.expect(page).toNotMatchScreenshot('group2_page2');
           await phantesta.acceptDiff('group2_page1', 'group2_page2');
         }));
       });
