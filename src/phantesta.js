@@ -32,9 +32,154 @@ var isPhantom = function(page) {
   return !!page.render;
 };
 
-var isPositiveInt = function(str) {
-    var n = Math.floor(Number(str));
-    return String(n) === str && n > 0;
+var isPositiveInt = function(x) {
+    var n = Math.floor(Number(x));
+    return String(n) === String(x) && n > 0;
+};
+
+var ScreenshotExpect = function(phantesta, page, rootElement) {
+  if(typeof rootElement === 'undefined') {
+    rootElement = 'html';
+  }
+  this.phantesta = phantesta;
+  this.rootElement = rootElement;
+  this.page = page;
+  this.skipBoxes = [];
+  this.includeOnlyBoxes = [];
+  this.skipElementSelectors = [];
+  this.includeOnlyElementSelectors = [];
+};
+
+ScreenshotExpect.prototype.censorRect = function(x, y, w, h) {
+  this.skipBoxes.push({x: x, y: y, w: w, h: h});
+  return this;
+};
+
+ScreenshotExpect.prototype.includeOnlyRect = function(x, y, w, h) {
+  if(this.skipBoxes.length > 0 || this.skipElementSelectors > 0) {
+    throw new Error('You need to set includeOnly options before censoring!')
+  }
+  this.includeOnlyBoxes.push({x: x, y: y, w: w, h: h});
+  return this;
+};
+
+ScreenshotExpect.prototype.censorMatching = function(selector) {
+  this.skipElementSelectors.push(selector);
+  return this;
+};
+
+ScreenshotExpect.prototype.includeOnlyMatching = function(selector) {
+  if(this.skipBoxes.length > 0 || this.skipElementSelectors > 0) {
+    throw new Error('You need to set includeOnly options before censoring!')
+  }
+  this.includeOnlyElementSelectors.push(selector);
+  return this;
+};
+
+ScreenshotExpect.prototype.testSingle = async function(ssInfo, allowDiff) {
+  if (!fs.existsSync(this.phantesta.getGoodPath(ssInfo.name))) {
+    copy(this.phantesta.getNewPath(ssInfo.name), this.phantesta.getDiffPath(ssInfo.name));
+    this.phantesta.ssInfoExpect(
+      ssInfo,
+      'new screenshot: ' + ssInfo.name,
+      'screenshot success: ' + ssInfo.name);
+    return;
+  }
+
+  var includeOnlyBoxes = [];
+  var skipBoxes = [];
+  includeOnlyBoxes = includeOnlyBoxes.concat(this.includeOnlyBoxes);
+  skipBoxes = skipBoxes.concat(this.skipBoxes);
+  for(var i = 0; i < this.includeOnlyElementSelectors.length; i++) {
+    var elements = await this.page.findElements(By.css(this.includeOnlyElementSelectors[i]));
+    for(var j = 0; j < elements.length; j++) {
+      var location = await elements[j].getLocation();
+      var size = await elements[j].getSize();
+      includeOnlyBoxes.push({x: location.x, y: location.y, w: size.width, h: size.height});
+    }
+  }
+  for(var i = 0; i < this.skipElementSelectors.length; i++) {
+    var elements = await this.page.findElements(By.css(this.skipElementSelectors[i]));
+    for(var j = 0; j < elements.length; j++) {
+      var location = await elements[j].getLocation();
+      var size = await elements[j].getSize();
+      skipBoxes.push({x: location.x, y: location.y, w: size.width, h: size.height});
+    }
+  }
+
+  if (await this.phantesta.isDiff(
+      this.phantesta.getNewPath(ssInfo.name),
+      this.phantesta.getGoodPath(ssInfo.name),
+      skipBoxes,
+      includeOnlyBoxes
+  )) {
+    if (allowDiff) {
+      return 'diff detected';
+    }
+    await this.phantesta.screenshot(
+      this.phantesta.diffPage,
+      '#result > img',
+      this.phantesta.getDiffPath(ssInfo.name)
+    );
+    var showPaths = JSON.stringify({
+      goodPath: this.phantesta.getGoodPath(ssInfo.name),
+      newPath: this.phantesta.getNewPath(ssInfo.name),
+      diffPath: this.phantesta.getDiffPath(ssInfo.name),
+    });
+    this.phantesta.ssInfoExpect(
+      ssInfo,
+      'screenshot fail: ' + ssInfo.name + ' ' + showPaths,
+      'screenshot success: ' + ssInfo.name);
+  } else {
+    this.phantesta.ssInfoExpect(
+      ssInfo,
+      'screenshot success: ' + ssInfo.name,
+      'screenshot success: ' + ssInfo.name);
+    safeUnlinkSync(this.phantesta.getNewPath(ssInfo.name));
+    safeUnlinkSync(this.phantesta.getDiffPath(ssInfo.name));
+  }
+};
+
+ScreenshotExpect.prototype.toMatchScreenshot = async function(name, kwargs) {
+  kwargs = kwargs || {};
+  var attempts = isPositiveInt(kwargs.attempts) ? kwargs.attempts : 1;
+  var wait = isPositiveInt(kwargs.wait) ? kwargs.wait : 1000;
+  var result;
+  while (true) {
+    await this.phantesta.screenshot(this.page, this.rootElement, this.phantesta.getNewPath(name));
+    result = await this.testSingle({
+      type: 'stable',
+      name: name,
+    }, attempts > 1);
+    attempts -= 1;
+    if (result !== 'diff detected' || attempts === 0) {
+      break;
+    }
+    await new Promise(function(resolve) {
+      setTimeout(resolve, wait);
+    });
+  }
+};
+
+ScreenshotExpect.prototype.toNotMatchScreenshot = async function(name, kwargs) {
+  kwargs = kwargs || {};
+  var attempts = isPositiveInt(kwargs.attempts) ? kwargs.attempts : 1;
+  var wait = isPositiveInt(kwargs.wait) ? kwargs.wait : 1000;
+  var result;
+  while (true) {
+    await this.phantesta.screenshot(this.page, this.rootElement, this.phantesta.getNewPath(name));
+    result = await this.testSingle({
+      type: 'unstable',
+      name: name,
+    }, attempts > 1);
+    attempts -= 1;
+    if (result !== 'diff detected' || attempts === 0) {
+      break;
+    }
+    await new Promise(function(resolve) {
+      setTimeout(resolve, wait);
+    });
+  }
 };
 
 var Phantesta = function(diffPage, options) {
@@ -77,6 +222,9 @@ Phantesta.prototype.getNewPath = function(name) {
 Phantesta.prototype.getDiffPath = function(name) {
   return path.resolve(this.getCurrentPath(), name + this.options.diffExt);
 };
+Phantesta.prototype.expect = function(page, rootElement) {
+  return new ScreenshotExpect(this, page, rootElement);
+};
 Phantesta.prototype.screenshot = async function(page, target, filename) {
   if (isPhantom(page)) {
     var prevClip = await page.property('clipRect');
@@ -98,7 +246,7 @@ Phantesta.prototype.screenshot = async function(page, target, filename) {
     }, target);
     if (!clipRect) {
       console.log(
-          'Unable to take screenshot of target: ' + target + ' with path ' + filename);
+        'Unable to take screenshot of target: ' + target + ' with path ' + filename);
     }
     await page.property('clipRect', {
       top: clipRect.top,
@@ -123,41 +271,9 @@ Phantesta.prototype.screenshot = async function(page, target, filename) {
     throw new Error('Unable to determine type of page');
   }
 };
-Phantesta.prototype.expectStable = async function(page, target, name, boxes) {
-  await this.screenshot(page, target, this.getNewPath(name));
-  await this.testSingle({
-    type: 'stable',
-    name: name,
-  }, false, boxes);
-};
-Phantesta.prototype.expectUnstable = async function(page, target, name, boxes) {
-  await this.screenshot(page, target, this.getNewPath(name));
-  await this.testSingle({
-    type: 'unstable',
-    name: name,
-  }, false, boxes);
-};
-Phantesta.prototype.expectStablePolled = async function(page, target, name, attempts, wait, boxes) {
-  attempts = isPositiveInt(attempts) ? attempts : 10;
-  wait = isPositiveInt(wait) ? wait : 1000;
-  var result;
-  while (true) {
-    await this.screenshot(page, target, this.getNewPath(name));
-    result = await this.testSingle({
-      type: 'stable',
-      name: name,
-    }, attempts > 1, boxes);
-    attempts -= 1;
-    if (result !== 'diff detected' || attempts === 0) {
-      break;
-    }
-    await new Promise(function(resolve) {
-      setTimeout(resolve, wait);
-    });
-  }
-};
-Phantesta.prototype.expectSame = async function(name1, name2, boxes) {
-  if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2), boxes)) {
+
+Phantesta.prototype.expectSame = async function(name1, name2, excludeBoxes, includeBoxes) {
+  if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2), excludeBoxes, includeBoxes)) {
     this.options.expectToBe(
         'fail: ' + name1 + ' is the same as ' + name2,
         'success: ' + name1 + ' is the same as ' + name2);
@@ -167,8 +283,8 @@ Phantesta.prototype.expectSame = async function(name1, name2, boxes) {
         'success: ' + name1 + ' is the same as ' + name2);
   }
 };
-Phantesta.prototype.expectDiff = async function(name1, name2, boxes) {
-  if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2), boxes)) {
+Phantesta.prototype.expectDiff = async function(name1, name2, excludeBoxes, includeBoxes) {
+  if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2), excludeBoxes, includeBoxes)) {
     this.options.expectToBe(
         'success: ' + name1 + ' is different than ' + name2,
         'success: ' + name1 + ' is different than ' + name2);
@@ -178,12 +294,7 @@ Phantesta.prototype.expectDiff = async function(name1, name2, boxes) {
         'success: ' + name1 + ' is different than ' + name2);
   }
 };
-Phantesta.prototype.isDiff = async function(filename1, filename2, boxes) {
-  boxes = boxes || [];
-  if (boxes.length > 0 && typeof boxes[0] === 'string') {
-    // convert css selectors to coordinates
-    // TODO: LOH
-  }
+Phantesta.prototype.isDiff = async function(filename1, filename2, excludeBoxes, includeBoxes) {
   if (isPhantom(this.diffPage)) {
     await this.diffPage.open('about:blank');
     var url = 'file:///' + path.resolve(__dirname, '../resemble.html');
@@ -193,20 +304,18 @@ Phantesta.prototype.isDiff = async function(filename1, filename2, boxes) {
     await this.diffPage.uploadFile('#b', filename2);
     await this.diffPage.evaluate(function() {
       window.imageDiffer = new ImageDiffer();
-      return window.imageDiffer.doDiff(arguments[0]);
-    }, boxes);
+      return window.imageDiffer
+        .includeOnlyBoxes(arguments[1])
+        .censorBoxes(arguments[0])
+        .doDiff();
+    }, excludeBoxes, includeBoxes);
     var ret = null;
     while (ret === null || ret === 'RESULT NOT READY') {
       ret = await this.diffPage.evaluate(function () {
-        try {
-          return window.imageDiffer.getResult();
-        } catch (e) {
-          if (e.message === 'result is not ready yet!') {
-            return 'RESULT NOT READY'
-          } else {
-            console.error(e);
-          }
+        if (!window.imageDiffer.isReady()) {
+          return 'RESULT NOT READY';
         }
+        return window.imageDiffer.getResult();
       });
     }
     return ret.rawMisMatchPercentage > 0;
@@ -218,11 +327,17 @@ Phantesta.prototype.isDiff = async function(filename1, filename2, boxes) {
     await this.diffPage.findElement(By.css('#b')).sendKeys(filename2);
     await this.diffPage.executeScript(function() {
       window.imageDiffer = new ImageDiffer();
-      return window.imageDiffer.doDiff(arguments[0]);
-    }, boxes);
+      return window.imageDiffer
+        .includeOnlyBoxes(arguments[1])
+        .censorBoxes(arguments[0])
+        .doDiff();
+    }, excludeBoxes, includeBoxes);
     var ret = null;
-    while (ret === null) {
+    while (ret === null || ret === 'RESULT NOT READY') {
       ret = await this.diffPage.executeScript(function() {
+        if (!window.imageDiffer.isReady()) {
+          return 'RESULT NOT READY';
+        }
         return window.imageDiffer.getResult();
       });
     }
@@ -238,39 +353,6 @@ Phantesta.prototype.ssInfoExpect = function(ssInfo, actual, expected) {
     this.options.expectNotToBe(actual, expected);
   }
 }
-Phantesta.prototype.testSingle = async function(ssInfo, allowDiff, boxes) {
-  if (!fs.existsSync(this.getGoodPath(ssInfo.name))) {
-    copy(this.getNewPath(ssInfo.name), this.getDiffPath(ssInfo.name));
-    this.ssInfoExpect(
-        ssInfo,
-        'new screenshot: ' + ssInfo.name,
-        'screenshot success: ' + ssInfo.name);
-    return;
-  }
-  if (await this.isDiff(this.getNewPath(ssInfo.name), this.getGoodPath(ssInfo.name), boxes)) {
-    if (allowDiff) {
-      return 'diff detected';
-    }
-    await this.screenshot(
-        this.diffPage, '#result > img', this.getDiffPath(ssInfo.name));
-    var showPaths = JSON.stringify({
-      goodPath: this.getGoodPath(ssInfo.name),
-      newPath: this.getNewPath(ssInfo.name),
-      diffPath: this.getDiffPath(ssInfo.name),
-    });
-    this.ssInfoExpect(
-        ssInfo,
-        'screenshot fail: ' + ssInfo.name + ' ' + showPaths,
-        'screenshot success: ' + ssInfo.name);
-  } else {
-    this.ssInfoExpect(
-        ssInfo,
-        'screenshot success: ' + ssInfo.name,
-        'screenshot success: ' + ssInfo.name);
-    safeUnlinkSync(this.getNewPath(ssInfo.name));
-    safeUnlinkSync(this.getDiffPath(ssInfo.name));
-  }
-};
 Phantesta.prototype.destructiveClearAllSnapshots = async function() {
   child_process.execSync('rm -rf ' + this.options.screenshotPath + '/*');
 };
@@ -297,7 +379,6 @@ Phantesta.prototype.clearDiffs = function(f) {
     for (var i = 0; i < files.length; ++i) {
       var name = path.relative(path.resolve(self.options.screenshotPath), files[i])
           .slice(0, -self.options.diffExt.length);
-      console.log('removing ' + name);
       safeUnlinkSync(self.getNewPath(name));
       safeUnlinkSync(self.getDiffPath(name));
     }
