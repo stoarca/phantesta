@@ -46,7 +46,7 @@ describe('my test suite', function() {
   }));
 
   beforeEach(function() {
-    phantesta.group('group1');
+    phantesta.group(__dirname);
   });
 
   afterEach(function() {
@@ -55,11 +55,11 @@ describe('my test suite', function() {
 
   it('should do some tests', syncify(async function() {
     await page.open('http://www.google.com');
-    await phantesta.expectStable(page, 'html', 'unique_snapshot_name');
-    await phantesta.expectStable(page, 'html', 'unique_snapshot_name2');
+    await phantesta.expect(page).toMatchScreenshot('unique_snapshot_name');
+    await phantesta.expect(page).toMatchScreenshot('unique_snapshot_name2');
     await phantesta.expectSame('unique_snapshot_name', 'unique_snapshot_name2');
     await page.open('http://www.asdf.com');
-    await phantesta.expectStable(page, 'html', 'another_website');
+    await phantesta.expect(page).toMatchScreenshot('another_website');
     await phantesta.expectDiff('unique_snapshot_name', 'another_website');
   }));
 });
@@ -108,31 +108,32 @@ failed snapshots, with the option to view and accept diffs to snapshots.
 Override the expectToBe and expectNotToBe calls with methods from your test
 framework if you're not using jasmine.
 
-### async Phantesta.prototype.expectStable(page, target, name, boxes)
+### async Phantesta.prototype.expect(page, target) -> ScreenshotExpect
 
  - `page` is one of:
    - the node-phantomjs page of which a screenshot is to be taken
    - the selenium driver of which a screenshot is to be taken
  - `target` is a selector used to target a portion of the page
- - `name` is a unique name for the snapshot
- - `boxes` is an array of objects defining regions to ignore in the comparison where each region is defined with `x`, and `y` of the top left corner, as well as `w`, and `h` for width and height
-  - e.g. `{ x: 100, y: 100, w: 100, h: 100 }` for a region positioned at (100, 100) that is 100 pixels in width and height
 
 Passes if the screenshot is unchanged relative to the good `name` screenshot.
 Fails and leaves `.new.png` and `.diff.png` images in the `screenshotPath` if
 the screenshot has changed relative to the good `name` screenshot
 
-### async Phantesta.prototype.expectStablePolled(page, target, name, attempts, wait, boxes)
+#### async ScreenshotExpect.prototype.censorMatching(selector) -> ScreenshotExpect
+ - `selector` is a CSS selector with which you mean to ignore a part of the screenshot for comparison
+ - For example, `phantesta.expect(page).censorMatching('.ignore-in-ui-test').toMatchScreenshot('name');`
 
- - `page` is one of:
-   - the node-phantomjs page of which a screenshot is to be taken
-   - the selenium driver of which a screenshot is to be taken
- - `target` is a selector used to target a portion of the page
- - `name` is a unique name for the snapshot
- - `attempts` *(optional: defaults to 10 attempts)* is a positive integer specifying the number of attempts to make
- - `wait` *(optional: defaults to 1000ms)* is duration in milliseconds specifying how long to wait between attempts
- - `boxes` is an array of objects defining regions to ignore in the comparison where each region is defined with `x`, and `y` of the top left corner, as well as `w`, and `h` for width and height
-   - e.g. { x: 100, y: 100, w: 100, h: 100} for a region positioned at (100, 100) that is 100 pixels in width and height
+#### async ScreenshotExpect.prototype.censorRect(x, y, width, height) -> ScreenshotExpect
+ - takes parameters for a box (with 0,0 in the top left), and censors that box so that it is excluded from any comparison
+ - that is, the box censored by this method will contain pixels that can contain anything without failing the test
+
+#### async ScreenshotExpect.prototype.includeOnlyRect(x, y, width, height) -> ScreenshotExpect
+ - takes parameters for a box (with 0,0 in the top left), and censors anything not in that box from being included in the image comparison
+ - if you include only multiple elements, their union is included and all other things are excluded
+ - if you don't specify anything to include only, everything is included by default
+
+#### async ScreenshotExpect.prototype.includeOnlyMatching(selector) -> ScreenshotExpect
+ - finds all elements in the page matching `selector` and calls `includeOnlyRect` on them.
 
 ### async Phantesta.prototype.expectSame(name1, name2, boxes)
 
