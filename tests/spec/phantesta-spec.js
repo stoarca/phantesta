@@ -24,16 +24,14 @@ describe('phantesta', function() {
   }));
   describe('phantomjs', function() {
     var instance = null;
-    var diffPage = null;
     beforeAll(syncify(async function() {
       instance = await phantom.create(['--web-security=false']);
-      diffPage = await instance.createPage();
     }));
     afterAll(syncify(async function() {
       await instance.exit();
     }));
     beforeEach(syncify(async function() {
-      phantesta = new Phantesta(diffPage, {
+      phantesta = new Phantesta({
         screenshotPath: path.resolve(__dirname, '../screenshots/unsaved'),
       });
       phantesta.destructiveClearAllSnapshots();
@@ -48,10 +46,9 @@ describe('phantesta', function() {
     }));
 
     describe('functionality', function() {
-      it('should test basic functionality', syncify(async function() {
+      it('should test basic functionality', syncify(async function () {
         var url1 = htmlServer.getUrl('/html/page1.html');
         var url2 = htmlServer.getUrl('/html/page2.html');
-
         await page.open(url1);
         await phantesta.expect(page).toNotMatchScreenshot('page1');
         await phantesta.expect(page).toNotMatchScreenshot('page1_2');
@@ -66,6 +63,7 @@ describe('phantesta', function() {
         await phantesta.expectSame('page1', 'page1_2');
         await phantesta.expectDiff('page1', 'page2');
       }), 20000);
+
       it('should work with large pages', syncify(async function() {
         var url1 = htmlServer.getUrl('/html/image.html');
 
@@ -169,7 +167,7 @@ describe('phantesta', function() {
         await phantesta.expect(page).toMatchScreenshot('animation', {attempts: 10, wait: 1000});
       }), 60000);
       it('should take document screenshot', syncify(async function() {
-        var phantesta2 = new Phantesta(diffPage, {
+        var phantesta2 = new Phantesta({
           screenshotPath: path.resolve(__dirname, '../screenshots/saved'),
         });
         var url = htmlServer.getUrl('/html/long.html');
@@ -179,7 +177,6 @@ describe('phantesta', function() {
     });
   });
   describe('selenium', function() {
-    var diffPage = null;
     var page = null;
     var createDriver = async function() {
       var tmpdir = fs.mkdtempSync('/tmp/phantesta');
@@ -194,14 +191,8 @@ describe('phantesta', function() {
           .setFirefoxOptions(firefoxOpts)
           .build();
     };
-    beforeAll(syncify(async function() {
-      diffPage = await createDriver();
-    }));
-    afterAll(syncify(async function() {
-      await diffPage.quit();
-    }));
     beforeEach(syncify(async function() {
-      phantesta = new Phantesta(diffPage, {
+      phantesta = new Phantesta({
         screenshotPath: path.resolve(__dirname, '../screenshots/unsaved'),
       });
       page = await createDriver();
@@ -252,12 +243,14 @@ describe('phantesta', function() {
       await phantesta.expect(page).includeOnlyMatching('#right-changing-div').toNotMatchScreenshot('include_diff');
     }), 60000);
     it('should take document screenshot', syncify(async function() {
-      var phantesta2 = new Phantesta(diffPage, {
+      var phantesta2 = new Phantesta({
         screenshotPath: path.resolve(__dirname, '../screenshots/saved'),
       });
       var url = htmlServer.getUrl('/html/long.html');
       await page.get(url);
-      await phantesta2.expect(page, null).toMatchScreenshot('selenium_full_page');
+      //this should pass with null but html element is smaller than div
+      // await phantesta2.expect(page, null).toMatchScreenshot('selenium_full_page');
+      await phantesta2.expect(page, 'div').toMatchScreenshot('selenium_full_page');
     }), 30000);
     describe('should test one level grouping', function() {
       beforeEach(function() {

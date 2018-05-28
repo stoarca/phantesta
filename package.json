@@ -1,6 +1,6 @@
 {
   "name": "phantesta",
-  "version": "3.0.1",
+  "version": "4.0.0",
   "description": "Screenshot diffing for tests",
   "main": "dist/phantesta.js",
   "scripts": {
@@ -20,6 +20,7 @@
   "license": "MIT",
   "dependencies": {
     "argparse": "1.0.9",
+    "babel-preset-node6": "11.0.0",
     "body-parser": "1.15.2",
     "express": "4.14.1",
     "geckodriver": "1.10.0",

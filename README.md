@@ -4,6 +4,13 @@ Phantesta is a testing library built on top of phantomjs-node or selenium.
 It allows you to
 write regression tests to ensure a rendered portion of a page does not change.
 
+## Requirements
+`Phantesta` depends on [ImageMagick][].
+
+Please install this before continuing.
+
+[ImageMagick]: http://www.imagemagick.org/
+
 ## Installation
 
 ```bash
@@ -21,18 +28,16 @@ import Phantesta from 'phantesta';
 describe('my test suite', function() {
   var instance = null;
   var page = null;
-  var diffPage = null;
   var phantesta = null;
 
   beforeAll(syncify(async function() {
     instance = await phantom.create(['--web-security=false']);
-    diffPage = await instance.createPage();
   }));
   afterAll(syncify(async function() {
     await instance.exit();
   }));
   beforeEach(syncify(async function() {
-    phantesta = new Phantesta(diffPage, {
+    phantesta = new Phantesta({
       screenshotPath: path.resolve(__dirname, '../screenshots'),
     });
     page = await instance.createPage();
@@ -92,11 +97,8 @@ failed snapshots, with the option to view and accept diffs to snapshots.
 
 ## API
 
-### new Phantesta(diffPage, options)
+### new Phantesta(options)
 
- - `diffPage` is one of:
-   - a node-phantomjs page which is not used for anything else
-   - a selenium driver which is not used for anything else
  - `options` is a dict with the keys
    - `screenshotPath` defaults to `"tests/visual/screenshots"`
    - `goodExt` defaults to `".good.png"`
