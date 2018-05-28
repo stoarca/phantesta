@@ -6,6 +6,7 @@ import glob from 'glob';
 import path from 'path';
 import { By, until } from 'selenium-webdriver';
 import q from 'q';
+import imageMagickDoDiff from './imageMagickDiff';
 
 var safeUnlinkSync = function(file) {
   try {
@@ -110,17 +111,14 @@ ScreenshotExpect.prototype.testSingle = async function(ssInfo, allowDiff) {
   if (await this.phantesta.isDiff(
       this.phantesta.getNewPath(ssInfo.name),
       this.phantesta.getGoodPath(ssInfo.name),
+      this.phantesta.getDiffPath(ssInfo.name),
       skipBoxes,
       includeOnlyBoxes
   )) {
     if (allowDiff) {
       return 'diff detected';
     }
-    await this.phantesta.screenshot(
-      this.phantesta.diffPage,
-      '#result > img',
-      this.phantesta.getDiffPath(ssInfo.name)
-    );
+
     var showPaths = JSON.stringify({
       goodPath: this.phantesta.getGoodPath(ssInfo.name),
       newPath: this.phantesta.getNewPath(ssInfo.name),
@@ -131,12 +129,14 @@ ScreenshotExpect.prototype.testSingle = async function(ssInfo, allowDiff) {
       'screenshot fail: ' + ssInfo.name + ' ' + showPaths,
       'screenshot success: ' + ssInfo.name);
   } else {
+
     this.phantesta.ssInfoExpect(
       ssInfo,
       'screenshot success: ' + ssInfo.name,
       'screenshot success: ' + ssInfo.name);
     safeUnlinkSync(this.phantesta.getNewPath(ssInfo.name));
     safeUnlinkSync(this.phantesta.getDiffPath(ssInfo.name));
+
   }
 };
 
@@ -182,8 +182,15 @@ ScreenshotExpect.prototype.toNotMatchScreenshot = async function(name, kwargs) {
   }
 };
 
-var Phantesta = function(diffPage, options) {
-  this.diffPage = diffPage;
+var Phantesta = function(options) {
+
+  //check to make sure imageMagick is installed
+  try {
+    child_process.execSync('which convert compare');
+  } catch (e) {
+    throw new Error("imageMagick not installed");
+  }
+
   var defaults = {
     screenshotPath: 'tests/visual/screenshots',
     subPath: [],
@@ -273,7 +280,7 @@ Phantesta.prototype.screenshot = async function(page, target, filename) {
 };
 
 Phantesta.prototype.expectSame = async function(name1, name2, excludeBoxes, includeBoxes) {
-  if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2), excludeBoxes, includeBoxes)) {
+  if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2), undefined, excludeBoxes, includeBoxes)) {
     this.options.expectToBe(
         'fail: ' + name1 + ' is the same as ' + name2,
         'success: ' + name1 + ' is the same as ' + name2);
@@ -284,7 +291,7 @@ Phantesta.prototype.expectSame = async function(name1, name2, excludeBoxes, incl
   }
 };
 Phantesta.prototype.expectDiff = async function(name1, name2, excludeBoxes, includeBoxes) {
-  if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2), excludeBoxes, includeBoxes)) {
+  if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2), undefined, excludeBoxes, includeBoxes)) {
     this.options.expectToBe(
         'success: ' + name1 + ' is different than ' + name2,
         'success: ' + name1 + ' is different than ' + name2);
@@ -294,57 +301,10 @@ Phantesta.prototype.expectDiff = async function(name1, name2, excludeBoxes, incl
         'success: ' + name1 + ' is different than ' + name2);
   }
 };
-Phantesta.prototype.isDiff = async function(filename1, filename2, excludeBoxes, includeBoxes) {
-  if (isPhantom(this.diffPage)) {
-    await this.diffPage.open('about:blank');
-    var url = 'file:///' + path.resolve(__dirname, '../resemble.html');
-    var stat = await this.diffPage.open(url);
-    this.options.expectToBe(stat, 'success');
-    await this.diffPage.uploadFile('#a', filename1);
-    await this.diffPage.uploadFile('#b', filename2);
-    await this.diffPage.evaluate(function() {
-      window.imageDiffer = new ImageDiffer();
-      return window.imageDiffer
-        .includeOnlyBoxes(arguments[1])
-        .censorBoxes(arguments[0])
-        .doDiff();
-    }, excludeBoxes, includeBoxes);
-    var ret = null;
-    while (ret === null || ret === 'RESULT NOT READY') {
-      ret = await this.diffPage.evaluate(function () {
-        if (!window.imageDiffer.isReady()) {
-          return 'RESULT NOT READY';
-        }
-        return window.imageDiffer.getResult();
-      });
-    }
-    return ret.rawMisMatchPercentage > 0;
-  } else if (isSelenium(this.diffPage)) {
-    await this.diffPage.get('about:blank');
-    var url = 'file:///' + path.resolve(__dirname, '../resemble.html');
-    await this.diffPage.get(url);
-    await this.diffPage.findElement(By.css('#a')).sendKeys(filename1);
-    await this.diffPage.findElement(By.css('#b')).sendKeys(filename2);
-    await this.diffPage.executeScript(function() {
-      window.imageDiffer = new ImageDiffer();
-      return window.imageDiffer
-        .includeOnlyBoxes(arguments[1])
-        .censorBoxes(arguments[0])
-        .doDiff();
-    }, excludeBoxes, includeBoxes);
-    var ret = null;
-    while (ret === null || ret === 'RESULT NOT READY') {
-      ret = await this.diffPage.executeScript(function() {
-        if (!window.imageDiffer.isReady()) {
-          return 'RESULT NOT READY';
-        }
-        return window.imageDiffer.getResult();
-      });
-    }
-    return ret.rawMisMatchPercentage > 0;
-  } else {
-    throw new Error('Unable to determine type of page');
-  }
+Phantesta.prototype.isDiff = function(filename1, filename2, diffPath, excludeBoxes, includeBoxes) {
+
+  return imageMagickDoDiff(filename1, filename2, diffPath, includeBoxes, excludeBoxes);
+
 }
 Phantesta.prototype.ssInfoExpect = function(ssInfo, actual, expected) {
   if (ssInfo.type === 'stable') {
