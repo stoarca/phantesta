@@ -24,7 +24,7 @@ var doDiff = async function(filename1, filename2, diffFile,
 
   return new Promise(function (resolve) {
 
-    diffFile = diffFile || 'miff:';
+    diffFile = diffFile || 'null:';
 
     var compare_process = child_process.exec('compare -metric AE' + ' '
         + '-highlight-color'  + ' ' + colourOfDiff + ' '
@@ -47,27 +47,23 @@ var extensionAddedName = function (extension, filePath) {
 
 var resizeImages = async function(filename1, filename2) {
 
+  var colourOfBkg = '"rgba(0, 255, 255, 255)"'; //inner double quotes necessary
+
   var paddedImage1 = extensionAddedName('padded+', filename1);
   var paddedImage2 = extensionAddedName('padded+', filename2);
 
-  var [height1, height2, width1, width2] = (await Promise.all([
-    checkStdOut('convert' + ' ' + filename1 + ' ' + '-ping -format "%h" info:'),
-    checkStdOut('convert' + ' ' + filename2 + ' ' + '-ping -format "%h" info:'),
-    checkStdOut('convert' + ' ' + filename1 + ' ' + '-ping -format "%w" info:'),
-    checkStdOut('convert' + ' ' + filename2 + ' ' + '-ping -format "%w" info:')
-  ])).map((value => parseInt(value, 10)));
+  DimensionOfImage = (await checkStdOut('identify' + ' '
+      + '-format "%[fx:max(u.w,v.w)]x%[fx:max(u.h,v.h)]\n"'
+      + filename1 + ' ' + filename2)).split("\n")[0];
 
-  DimensionOfImage = Math.max(width1, width2) + 'x' + Math.max(height1, height2);
-
-  var process1 = runCmdAsPromise('convert' + ' ' +  filename1 +  ' '
-      + '-resize' + ' ' + DimensionOfImage + ' ' +
-      '-gravity center' + ' ' + '-background white' + ' '
+  var process1 = runCmdAsPromise('convert' + ' ' + filename1 + ' '
+      + '-gravity center -background' + ' ' + colourOfBkg + ' '
       + '-extent' + ' ' + DimensionOfImage + ' ' + paddedImage1);
 
-  var process2 = runCmdAsPromise('convert' + ' ' +  filename2 +  ' '
-      + '-resize' + ' ' + DimensionOfImage + ' ' +
-      '-gravity center' + ' ' + '-background white' + ' '
+  var process2 = runCmdAsPromise('convert' + ' ' + filename2 + ' '
+      + '-gravity center -background' + ' ' + colourOfBkg + ' '
       + '-extent' + ' ' + DimensionOfImage + ' ' + paddedImage2);
+
 
   await Promise.all([process1, process2]);
 
@@ -86,28 +82,23 @@ var includeOnlyAsync = function (imagePaths, includeBoxes) {
 
       var imageMagickCmd = '' ;
 
-      includeBoxes.forEach(function(includeBox, index) {
+      includeBoxes.forEach(function(includeBox) {
 
         var dimensionOfBox = includeBox.w + 'x' + includeBox.h;
         var coordinatesOfBox = '+' + includeBox.x + '+' + includeBox.y;
 
-        var imageToCrop = index === 0 ? canvas : '+clone';
-        var ifSave = index === includeBoxes.length - 1 ? '-write' + ' '
-            + canvas + ' ' : '';
-
         //chain up a command to crop out all pieces in single command
-        imageMagickCmd = imageMagickCmd + ' ' + '\\(' + ' ' + imageToCrop + ' '
-            + '\\(' + ' ' + imagePath + ' ' + '-crop' + ' ' + dimensionOfBox +
-            coordinatesOfBox + ' ' + '\\)' + ' ' + '-geometry' + ' ' +
-            coordinatesOfBox + ' '  + '-composite' + ' ' + ifSave + '\\)';
+        imageMagickCmd = imageMagickCmd + ' ' + '\\(' + ' ' + imagePath + ' '
+            + '-crop' + ' ' + dimensionOfBox + coordinatesOfBox + ' ' + '\\)'
+            + ' ' + '-geometry' + ' ' + coordinatesOfBox + ' '  + '-composite';
 
       });
+
       //create a canvas of size DimensionOfImage and
       // then compose cropped required areas on it
       child_process.execSync('convert' + ' ' + '-size' + ' ' + DimensionOfImage
-          + ' ' + 'canvas:' + colourOfCanvas + ' ' + canvas + ' && '
-          + 'convert' + imageMagickCmd + ' ' + 'miff:' + ' && '
-          + 'cp' + ' ' + canvas + ' ' + imagePath);  //overwrite imagePath
+          + ' ' + 'canvas:' + colourOfCanvas + ' ' + imageMagickCmd + ' ' + canvas
+          + ' && ' + 'cp' + ' ' + canvas + ' ' + imagePath);  //overwrite imagePath
 
       resolve();
     })
@@ -128,19 +119,15 @@ var maskOutAsync = function (imagePaths, skipBoxes) {
         var dimensionOfBox = skipBox.w + 'x' + skipBox.h;
         var coordinatesOfBox = '+' + skipBox.x + '+' + skipBox.y;
 
-        var imageToDrawOn = index === 0 ? imagePath : '+clone';
-        var ifSave = index === skipBoxes.length - 1 ? '-write' + ' '
-            + imagePath + ' ' : '';
-
         //chain up a command to draw all the skip boxes in one command
-        imageMagickCmd = imageMagickCmd + ' ' + '\\(' + ' ' + imageToDrawOn + ' '
-            + '-size' + ' ' + dimensionOfBox + ' ' + 'xc:' + colourOfBox + ' '
-            + '-geometry' + ' ' +  coordinatesOfBox + ' '
-            + '-compose over -composite' + ' ' + ifSave + '\\)';
+        imageMagickCmd = imageMagickCmd + ' ' + '-size' + ' ' + dimensionOfBox +
+            ' ' + 'xc:' + colourOfBox + ' ' + '-geometry' + ' ' +  coordinatesOfBox
+            + ' ' + '-composite';
       });
 
       //overlay black box over skipped areas
-      child_process.execSync('convert' + imageMagickCmd + ' ' + 'miff:');
+      child_process.execSync('convert' + ' ' + imagePath  + imageMagickCmd
+          + ' ' + imagePath);
       resolve();
     });
   }));
