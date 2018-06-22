@@ -72,7 +72,9 @@
             selectedDiffs += 1;
           }
         }
-        return selectedDiffs > 0;
+        if (selectedDiffs > 0) {
+          return true;
+        }
       };
 
       var wrapCell = function(element) {
