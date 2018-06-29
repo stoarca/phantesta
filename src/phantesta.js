@@ -7,6 +7,7 @@ import path from 'path';
 import { By, until } from 'selenium-webdriver';
 import q from 'q';
 import imageMagickDoDiff from './imageMagickDiff';
+import phantom from 'phantom';
 
 var safeUnlinkSync = function(file) {
   try {
@@ -119,6 +120,14 @@ ScreenshotExpect.prototype.testSingle = async function(ssInfo, allowDiff) {
       return 'diff detected';
     }
 
+    if (includeOnlyBoxes && includeOnlyBoxes.length) {
+      await this.phantesta.screenshot(
+          this.phantesta.diffPage,
+          '#result > img',
+          this.phantesta.getDiffPath(ssInfo.name)
+      );
+    }
+
     var showPaths = JSON.stringify({
       goodPath: this.phantesta.getGoodPath(ssInfo.name),
       newPath: this.phantesta.getNewPath(ssInfo.name),
@@ -136,7 +145,6 @@ ScreenshotExpect.prototype.testSingle = async function(ssInfo, allowDiff) {
       'screenshot success: ' + ssInfo.name);
     safeUnlinkSync(this.phantesta.getNewPath(ssInfo.name));
     safeUnlinkSync(this.phantesta.getDiffPath(ssInfo.name));
-
   }
 };
 
@@ -208,6 +216,15 @@ var Phantesta = function(options) {
     ...defaults,
     ...options,
   };
+
+  var self = this;
+  this.diffPagePromise = phantom.create(['--web-security=false'])
+  .then(function(instance) {
+    return instance.createPage();
+  })
+  .then(function(diffPage) {
+    self.diffPage = diffPage;
+  });
 };
 Phantesta.prototype.group = function(groupName) {
   this.options.subPath.push(groupName);
@@ -301,11 +318,41 @@ Phantesta.prototype.expectDiff = async function(name1, name2, excludeBoxes, incl
         'success: ' + name1 + ' is different than ' + name2);
   }
 };
-Phantesta.prototype.isDiff = function(filename1, filename2, diffPath, excludeBoxes, includeBoxes) {
+Phantesta.prototype.isDiff = async function(filename1, filename2, diffPath, excludeBoxes, includeBoxes) {
 
-  return imageMagickDoDiff(filename1, filename2, diffPath, includeBoxes, excludeBoxes);
+  if (!includeBoxes || !includeBoxes.length) {
+    return imageMagickDoDiff(filename1, filename2, diffPath, excludeBoxes);
+  }
 
-}
+  if (!this.diffPage) {
+    await this.diffPagePromise;
+  }
+
+  await this.diffPage.open('about:blank');
+  var url = 'file:///' + path.resolve(__dirname, '../resemble.html');
+  var stat = await this.diffPage.open(url);
+  this.options.expectToBe(stat, 'success');
+  await this.diffPage.uploadFile('#a', filename1);
+  await this.diffPage.uploadFile('#b', filename2);
+  await this.diffPage.evaluate(function() {
+    window.imageDiffer = new ImageDiffer();
+    return window.imageDiffer
+        .includeOnlyBoxes(arguments[1])
+        .censorBoxes(arguments[0])
+        .doDiff();
+  }, excludeBoxes, includeBoxes);
+  var ret = null;
+  while (ret === null || ret === 'RESULT NOT READY') {
+    ret = await this.diffPage.evaluate(function() {
+      if (!window.imageDiffer.isReady()) {
+        return 'RESULT NOT READY';
+      }
+      return window.imageDiffer.getResult();
+    });
+  }
+  return ret.rawMisMatchPercentage > 0;
+};
+
 Phantesta.prototype.ssInfoExpect = function(ssInfo, actual, expected) {
   if (ssInfo.type === 'stable') {
     this.options.expectToBe(actual, expected);
