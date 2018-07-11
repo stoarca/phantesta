@@ -269,8 +269,9 @@ Phantesta.prototype.screenshot = async function(page, target, filename) {
       }
     }, target);
     if (!clipRect) {
-      console.log(
-        'Unable to take screenshot of target: ' + target + ' with path ' + filename);
+      throw new Error(
+        `Unable to take screenshot of target: ${target} with path ${filename}`
+      );
     }
     await page.property('clipRect', {
       top: clipRect.top,
@@ -287,6 +288,11 @@ Phantesta.prototype.screenshot = async function(page, target, filename) {
     } else {
       var element = await page.findElement(By.css(target));
       image = await element.takeScreenshot();
+    }
+    if (!image) {
+      throw new Error(
+        `Unable to take screenshot of target: ${target} with path ${filename}`
+      );
     }
     child_process.spawnSync('mkdir', ['-p', path.dirname(filename)]);
     fs.writeFileSync(filename, image, 'base64');
