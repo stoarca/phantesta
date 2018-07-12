@@ -84,7 +84,6 @@ describe('phantesta', function() {
         var url1 = htmlServer.getUrl('/html/color.html?color=b7dfeb');
         var url2 = htmlServer.getUrl('/html/color.html?color=87cade');
         var url3 = htmlServer.getUrl('/html/color.html?color=cccccc');
-
         await page.open(url1);
         await phantesta.expect(page).toNotMatchScreenshot('colorlighter');
         await sleep(500);
@@ -97,6 +96,29 @@ describe('phantesta', function() {
         await phantesta.acceptDiff('colorgrey');
         await phantesta.expectDiff('colorlighter', 'colorlight');
         await phantesta.expectDiff('colorlighter', 'colorgrey');
+      }), 20000);
+      it('should be able to diff between different sizes', syncify(async function() {
+        var url1 = htmlServer.getUrl('/html/size.html?size=500x500');
+        var url2 = htmlServer.getUrl('/html/size.html?size=500x490');
+        await page.open(url1);
+        await phantesta.expect(page).toNotMatchScreenshot('bigger');
+        await phantesta.acceptDiff('bigger');
+        await page.open(url2);
+        await phantesta.expect(page).toNotMatchScreenshot('smaller');
+        await phantesta.acceptDiff('smaller');
+        await phantesta.expectDiff('bigger', 'smaller');
+      }), 20000);
+      it('should produce diff image for different sizes', syncify(async function() {
+        phantesta.startServer({host: 'localhost', port: '7993'});
+        var url1 = htmlServer.getUrl('/html/size.html?size=500x500');
+        var url2 = htmlServer.getUrl('/html/size.html?size=500x490');
+        await page.open(url1);
+        await phantesta.expect(page).toNotMatchScreenshot('bigger');
+        await phantesta.acceptDiff('bigger');
+        await page.open(url2);
+        await phantesta.expect(page).toNotMatchScreenshot('bigger');
+        var response = JSON.parse(await rp('http://localhost:7993/list_of_diffs'));
+        expect(response.diffs.length).toBe(1);
       }), 20000);
       it('should serve diffs correctly', syncify(async function() {
         phantesta.startServer({host: 'localhost', port: '7992'});
