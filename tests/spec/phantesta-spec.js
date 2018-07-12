@@ -84,7 +84,6 @@ describe('phantesta', function() {
         var url1 = htmlServer.getUrl('/html/color.html?color=b7dfeb');
         var url2 = htmlServer.getUrl('/html/color.html?color=87cade');
         var url3 = htmlServer.getUrl('/html/color.html?color=cccccc');
-
         await page.open(url1);
         await phantesta.expect(page).toNotMatchScreenshot('colorlighter');
         await sleep(500);
@@ -98,6 +97,18 @@ describe('phantesta', function() {
         await phantesta.expectDiff('colorlighter', 'colorlight');
         await phantesta.expectDiff('colorlighter', 'colorgrey');
       }), 20000);
+      it('should be able to diff between different sizes', syncify(async function() {
+        var url1 = htmlServer.getUrl('/html/size.html?size=500x500');
+        var url2 = htmlServer.getUrl('/html/size.html?size=500x490');
+
+        await page.open(url1);
+        await phantesta.expect(page).toNotMatchScreenshot('bigger');
+        await phantesta.acceptDiff('bigger');
+
+        await page.open(url2);
+        await phantesta.expect(page).toNotMatchScreenshot('bigger');
+        expect(fs.existsSync(phantesta.getDiffPath('bigger'))).toBeTruthy();
+      }), 5000);
       it('should serve diffs correctly', syncify(async function() {
         phantesta.startServer({host: 'localhost', port: '7992'});
         var url1 = htmlServer.getUrl('/html/page1.html');
@@ -365,6 +376,18 @@ describe('phantesta', function() {
         await phantesta.expectSame('selenium_page1', 'selenium_page1_2');
         await phantesta.expectDiff('selenium_page1', 'selenium_page2');
       }), 20000);
+      it('should be able to diff between different sizes', syncify(async function() {
+        var url1 = htmlServer.getUrl('/html/size.html?size=500x500');
+        var url2 = htmlServer.getUrl('/html/size.html?size=500x490');
+
+        await page.get(url1);
+        await phantesta.expect(page).toNotMatchScreenshot('bigger');
+        await phantesta.acceptDiff('bigger');
+
+        await page.get(url2);
+        await phantesta.expect(page).toNotMatchScreenshot('bigger');
+        expect(fs.existsSync(phantesta.getDiffPath('bigger'))).toBeTruthy();
+      }), 5000);
       it('should be able to skip diffs', syncify(async function() {
         var url1 = htmlServer.getUrl('/html/outer_diff1.html');
         var url2 = htmlServer.getUrl('/html/outer_diff2.html');
