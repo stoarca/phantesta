@@ -2,8 +2,6 @@ import child_process from 'child_process';
 import path from 'path';
 import fs from 'fs'
 
-var dimensionOfImage;
-
 //TODO: for very large images, perhaps split it into smaller pieces and
 // then compare to optimize ?
 var doDiff = async function(filename1, filename2, diffFile, skipBoxes) {
@@ -44,7 +42,6 @@ var extensionAddedName = function(extension, filePath) {
 };
 
 var resizeImages = async function(filename1, filename2) {
-
   var colourOfBkg = '"rgba(0, 255, 255, 255)"'; //inner double quotes necessary
 
   var paddedImage1 = extensionAddedName('padded+', filename1);
@@ -58,30 +55,28 @@ var resizeImages = async function(filename1, filename2) {
     checkStdOut(`identify -format "%w" ${filename2}`)
   ])).map((value => parseInt(value, 10)));
 
-  dimensionOfImage = `${Math.max(width1, width2)}x${Math.max(height1, height2)}`;
+  var dimensionOfImage = `${Math.max(width1, width2)}x${Math.max(height1, height2)}`;
 
   var process1, process2;
 
   if (height1 === height2 && width1 === width2) {
-
     process1 = runCmdAsPromise(`cp ${filename1} ${paddedImage1}`);
     process2 = runCmdAsPromise(`cp ${filename2} ${paddedImage2}`);
-
   } else {
-
     process1 = runCmdAsPromise(
         `convert ${filename1} \\
         -background ${colourOfBkg} \\
         -gravity center \\
+        -resize ${dimensionOfImage}! \\
         ${paddedImage1}`
     );
     process2 = runCmdAsPromise(
         `convert ${filename2} \\
         -background ${colourOfBkg} \\
         -gravity center \\
+        -resize ${dimensionOfImage}! \\
         ${paddedImage2}`
     );
-    
   }
 
   await Promise.all([process1, process2]);
