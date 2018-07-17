@@ -120,7 +120,7 @@ ScreenshotExpect.prototype.testSingle = async function(ssInfo, allowDiff) {
       return 'diff detected';
     }
 
-    if (includeOnlyBoxes && includeOnlyBoxes.length) {
+    if (includeOnlyBoxes && includeOnlyBoxes.length && this.phantesta.options.makeUseOfPhantom) {
       await this.phantesta.screenshot(
           this.phantesta.diffPage,
           '#result > img',
@@ -211,20 +211,23 @@ var Phantesta = function(options) {
     expectNotToBe: function(actual, expected) {
       expect(actual).not.toBe(expected);
     },
+    makeUseOfPhantom: true,
   };
   this.options = {
     ...defaults,
     ...options,
   };
 
-  var self = this;
-  this.diffPagePromise = phantom.create(['--web-security=false'])
-  .then(function(instance) {
-    return instance.createPage();
-  })
-  .then(function(diffPage) {
-    self.diffPage = diffPage;
-  });
+  if (this.options.makeUseOfPhantom) {
+    var self = this;
+    this.diffPagePromise = phantom.create(['--web-security=false'])
+        .then(function(instance) {
+          return instance.createPage();
+        })
+        .then(function(diffPage) {
+          self.diffPage = diffPage;
+        });
+  }
 };
 Phantesta.prototype.group = function(groupName) {
   this.options.subPath.push(groupName);
@@ -326,8 +329,8 @@ Phantesta.prototype.expectDiff = async function(name1, name2, excludeBoxes, incl
 };
 Phantesta.prototype.isDiff = async function(filename1, filename2, diffPath, excludeBoxes, includeBoxes) {
 
-  if (!includeBoxes || !includeBoxes.length) {
-    return imageMagickDoDiff(filename1, filename2, diffPath, excludeBoxes);
+  if (!this.options.makeUseOfPhantom || !includeBoxes || !includeBoxes.length) {
+    return imageMagickDoDiff(filename1, filename2, diffPath, excludeBoxes, includeBoxes);
   }
 
   if (!this.diffPage) {
@@ -407,9 +410,9 @@ Phantesta.prototype.listOfDiffs = function(f) {
           .slice(0, -self.options.diffExt.length);
       diffs.push({
         name: name,
-        goodSrc: '/images/' + encodeURIComponent(self.getGoodPath(name)),
-        newSrc: '/images/' + encodeURIComponent(self.getNewPath(name)),
-        diffSrc: '/images/' + encodeURIComponent(self.getDiffPath(name)),
+        goodSrc: './images/' + encodeURIComponent(self.getGoodPath(name)),
+        newSrc: './images/' + encodeURIComponent(self.getNewPath(name)),
+        diffSrc: './images/' + encodeURIComponent(self.getDiffPath(name)),
       });
     }
     f({diffs: diffs});
