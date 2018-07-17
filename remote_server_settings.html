@@ -1,0 +1,57 @@
+<html>
+
+<head>
+    <style>
+        th {
+            min-width: 200px;
+        }
+        td {
+            text-align: center;
+        }
+        body {
+            text-align: center;
+        }
+        button {
+            margin-top: 100px;
+        }
+        table {
+            margin: 0 auto;
+            margin-top: 50px;
+        }​
+    </style>
+    <script>
+      let setMaxPhantestaValue = function () {
+        return fetch('/settings/get_max_phantesta', {
+          method: 'get',
+        }).then(function(resp) { return resp.json() }).then(function(resp) {
+          let max = resp.max_phantesta;
+          document.getElementById('max_phantesta').setAttribute('value', max);
+        });
+      };
+      setTimeout(function () {
+        setMaxPhantestaValue();
+      }, 20)
+
+    </script>
+</head>
+
+<body>
+  <table cellpadding="10">
+      <th>Option</th><th>Value</th>
+      <tr>
+          <td>Max Phantesta Servers</td>
+          <td>
+              <form action="/settings/set_max_phantesta" method="post">
+                  <input id="max_phantesta" type="text" name="max_number" required>
+                  <input type="submit" value="Submit">
+              </form>
+          </td>
+
+      </tr>
+  </table>
+
+  <h4>Note: Changing the settings will affect all future phantesta servers spawned</h4>
+
+</body>
+
+</html>

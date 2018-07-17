@@ -6,13 +6,17 @@ var dimensionOfImage;
 
 //TODO: for very large images, perhaps split it into smaller pieces and
 // then compare to optimize ?
-var doDiff = async function(filename1, filename2, diffFile, skipBoxes) {
+var doDiff = async function(filename1, filename2, diffFile, skipBoxes, includeBoxes) {
 
   var colourOfDiff = '"rgba(255, 0, 255, 255)"';//inner double quotes necessary
 
   var paddedImages = await resizeImages(filename1, filename2); //necessary since images might not be of same size
   var paddedImage1 = paddedImages[0];
   var paddedImage2 = paddedImages[1];
+
+  if(!!includeBoxes && includeBoxes.length) {
+    await includeOnlyAsync([paddedImage1, paddedImage2], includeBoxes);
+  }
 
   if (!!skipBoxes && skipBoxes.length) {
     await maskOutAsync([paddedImage1, paddedImage2], skipBoxes);
@@ -87,6 +91,45 @@ var resizeImages = async function(filename1, filename2) {
   await Promise.all([process1, process2]);
 
   return [ paddedImage1, paddedImage2 ];
+};
+
+var includeOnlyAsync = function (imagePaths, includeBoxes) {
+
+  var colourOfCanvas = '"rgba(0, 255, 255, 255)"';//inner double quotes necessary
+
+  return Promise.all(imagePaths.map(function(imagePath) {
+    return new Promise(function (resolve) {
+
+      var canvas = extensionAddedName('canvas+', imagePath);
+
+      var imageMagickCmd = '' ;
+
+      includeBoxes.forEach(function(includeBox) {
+
+        var dimensionOfBox = `${includeBox.w}x${includeBox.h}`;
+        var coordinatesOfBox = `+${includeBox.x}+${includeBox.y}`;
+
+        //chain up a command to crop out all pieces in single command
+        imageMagickCmd +=
+            ` \\( ${imagePath} -crop ${dimensionOfBox}${coordinatesOfBox} \\) \\
+            -geometry ${coordinatesOfBox} \\
+            -composite`;
+
+      });
+
+      //create a canvas of size DimensionOfImage and
+      // then compose cropped required areas on it
+      child_process.execSync(
+          `convert -size ${dimensionOfImage} \\
+          canvas:${colourOfCanvas} \\
+          ${imageMagickCmd} \\
+          ${canvas} && \\
+          cp ${canvas} ${imagePath}` //overwrite imagePath
+          );
+
+      resolve();
+    })
+  }));
 };
 
 

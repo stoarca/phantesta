@@ -9,7 +9,10 @@ parser.addArgument(['--port'], {required: true});
 parser.addArgument(['--screenshotPath'], {required: true});
 var args = parser.parseArgs();
 
-var phantesta = new Phantesta({ screenshotPath: args.screenshotPath });
+var phantesta = new Phantesta(
+    { screenshotPath: args.screenshotPath,
+      makeUseOfPhantom: false,
+    });
 phantesta.startServer({
   host: args.host,
   port: args.port,

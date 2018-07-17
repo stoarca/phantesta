@@ -1,0 +1,81 @@
+<html>
+
+<head>
+
+    <style>
+
+        th {
+            min-width: 200px;
+        }
+        td {
+            text-align: center;
+        }
+        body {
+            text-align: center;
+        }
+        button {
+            float: right;
+        }
+        table {
+            margin: 0 auto;
+            margin-top: 50px;
+        }​
+
+    </style>
+
+    <script>
+      setTimeout(function () {
+
+        let servers = null;
+        let listServers = function () {
+          let node = document.getElementById('content');
+          while (node.hasChildNodes()) {
+            node.removeChild(node.lastChild);
+          }
+          node.innerHTML = '<tr><th>Identifier</th><th>Date Created</th>';
+
+          return fetch('/list_of_servers', {
+            method: 'get',
+          }).then(function(resp) { return resp.json() }).then(function(resp) {
+            servers = resp.servers;
+            for (let i = 0; i < servers.length; ++i) {
+              (function(i) {
+                let server = servers[i];
+
+                let row = document.createElement('tr');
+
+                let identifier = document.createElement('td');
+                let identifierUrl = document.createElement('a');
+                identifierUrl.innerHTML = server.identifier;
+                identifierUrl.setAttribute('href', server.url);
+                identifier.appendChild(identifierUrl);
+                row.appendChild(identifier);
+
+                let date = document.createElement('td');
+                date.innerHTML = server.date;
+                row.appendChild(date);
+
+
+                document.getElementById('content').appendChild(row);
+              })(i);
+            }
+          });
+        };
+
+        listServers();
+      }, 50)
+
+    </script>
+</head>
+
+<body>
+
+<button onClick="location.href = '/settings'">Settings</button>
+
+<h1> List of Phantesta Servers</h1>
+<table id="content" cellpadding="10">
+</table>
+
+</body>
+
+</html>

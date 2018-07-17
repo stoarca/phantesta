@@ -110,7 +110,7 @@
         }
         node.innerHTML = '<tr><td>name</td><td>accept</td><td>good</td><td>new</td><td>diff</td></tr>';
 
-        return fetch('/list_of_diffs', {
+        return fetch('./list_of_diffs', {
           method: 'get',
         }).then(function(resp) { return resp.json() }).then(function(resp) {
           diffs = resp.diffs;
@@ -149,7 +149,7 @@
       };
 
       document.getElementById('clearall').addEventListener('click', function() {
-        return fetch('/clear_diffs', {
+        return fetch('./clear_diffs', {
           method: 'POST',
         }).then(function(resp) { return resp.json() }).then(function(resp) {
           if (resp.status == 'success') {
@@ -159,7 +159,7 @@
       });
 
       document.getElementById('submit').addEventListener('click', function() {
-        return fetch('/submit_diffs', {
+        return fetch('./submit_diffs', {
           method: 'POST',
           headers: {
             'content-type': 'application/json',
