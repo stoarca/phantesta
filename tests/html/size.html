@@ -1,0 +1,8 @@
+<div id="sizeblock" style="background-color: red">
+</div>
+<script>
+  var w = /size=(.+)x(.+)/g.exec(document.URL)[1];
+  var h = /size=(.+)x(.+)/g.exec(document.URL)[2];
+  document.getElementById('sizeblock').style['width'] = w + 'px';
+  document.getElementById('sizeblock').style['height'] = h + 'px';
+</script>

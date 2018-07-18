@@ -48,7 +48,6 @@ var extensionAddedName = function(extension, filePath) {
 };
 
 var resizeImages = async function(filename1, filename2) {
-
   var colourOfBkg = '"rgba(0, 255, 255, 255)"'; //inner double quotes necessary
 
   var paddedImage1 = extensionAddedName('padded+', filename1);
@@ -67,25 +66,23 @@ var resizeImages = async function(filename1, filename2) {
   var process1, process2;
 
   if (height1 === height2 && width1 === width2) {
-
     process1 = runCmdAsPromise(`cp ${filename1} ${paddedImage1}`);
     process2 = runCmdAsPromise(`cp ${filename2} ${paddedImage2}`);
-
   } else {
-
     process1 = runCmdAsPromise(
         `convert ${filename1} \\
         -background ${colourOfBkg} \\
         -gravity center \\
+        -resize ${dimensionOfImage}! \\
         ${paddedImage1}`
     );
     process2 = runCmdAsPromise(
         `convert ${filename2} \\
         -background ${colourOfBkg} \\
         -gravity center \\
+        -resize ${dimensionOfImage}! \\
         ${paddedImage2}`
     );
-    
   }
 
   await Promise.all([process1, process2]);
