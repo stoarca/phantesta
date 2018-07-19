@@ -8,6 +8,7 @@ import { By, until } from 'selenium-webdriver';
 import q from 'q';
 import imageMagickDoDiff from './imageMagickDiff';
 import phantom from 'phantom';
+import exitHook from 'async-exit-hook';
 
 var safeUnlinkSync = function(file) {
   try {
@@ -222,11 +223,16 @@ var Phantesta = function(options) {
     var self = this;
     this.diffPagePromise = phantom.create(['--web-security=false'])
         .then(function(instance) {
-          return instance.createPage();
+          self.instance = instance;
+          return self.instance.createPage();
         })
         .then(function(diffPage) {
           self.diffPage = diffPage;
         });
+
+    exitHook(callback => {
+      this.instance.exit().then(() => callback);
+    });
   }
 };
 Phantesta.prototype.group = function(groupName) {
