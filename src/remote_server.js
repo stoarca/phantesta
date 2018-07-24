@@ -43,7 +43,7 @@ class RemoteServer {
 
     app.post('/settings/set_max_phantesta',  (req, res) => {
       this.maxPhantesta = req.body.max_number;
-      res.sendFile(path.resolve('list_of_phantesta_server.html'));
+      res.sendFile(path.resolve(__dirname, '../list_of_phantesta_server.html'));
     });
 
     app.get('/list_of_servers',  (req, res) => {
@@ -212,8 +212,10 @@ class RemoteServer {
 
     getPort().then(port => {
 
+      let path = path.resolve(__dirname, 'bin/phantesta-server.js');
+
       let phantestaProcess = child_process.exec(
-          `babel-node dist/bin/phantesta-server.js \\
+          `babel-node ${path} \\
           --host ${this.phantestaHost} --port ${port} \\
           --screenshotPath ${this.screenshotPath}/${identifier}`
       );
