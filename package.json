@@ -1,6 +1,6 @@
 {
   "name": "phantesta",
-  "version": "4.0.9",
+  "version": "4.0.10",
   "description": "Screenshot diffing for tests",
   "main": "dist/phantesta.js",
   "scripts": {
@@ -11,9 +11,9 @@
   },
   "bin": {
     "phantesta-server": "dist/bin/phantesta-server.js",
-    "remote-server": "dist/bin/start-remote-server.js",
-    "download-from-remote": "dist/bin/download-server.js",
-    "upload-to-remote": "dist/bin/upload-server.js"
+    "remote-phantesta-server": "dist/bin/start-remote-server.js",
+    "download-from-remote-phantesta": "dist/bin/download-server.js",
+    "upload-to-remote-phantesta": "dist/bin/upload-server.js"
   },
   "repository": {
     "type": "git",

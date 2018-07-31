@@ -95,6 +95,48 @@ run
 then visit `localhost:7991` after running tests. This site will have all the
 failed snapshots, with the option to view and accept diffs to snapshots.
 
+## Remote Phantesta Server
+
+The remote phantesta server will allow to upload and download snaphots to and from
+a Remote Server along with the ability to view and review them. To deploy this remote server, simply run
+```bash
+    remote-phantesta-server --port 3000 --savePath /home/phantesta --maxPhantestaServers 20
+```
+The remote server `optionally` takes in the following arguments:
+   - `port` defaults to 3000
+   - `savePath` is the path where screenshots uploaded will be saved in the remote host. Defaults to ~/phantesta
+   - `maxPhantestaServers` is the maximum number of phantesta server that will be run at any 
+      given time. Defaults to 20. Can be changed after the server is deployed through the UI provided.
+      If this limit is exceeded, phantesta servers would be replaced in a FIFO order. 
+      
+then visit `localhost:3000`. This site will have a list of phantesta servers created.
+Phantesta Servers are created when snapshots are uploaded to the server so that
+they can be viewed and reviewed.
+
+To upload snapshots to the server, run
+```bash
+    upload-to-remote-phantesta --host localhost --port 3000 --screenshotPath /home/screenshot --identifier uniqueIdentifier
+```
+upload-to-remote server takes in the following arguments:
+  - `host and port` specifies where the remote server is running
+  - `screenshotPath` is the path where all snapshots are located locally.
+     This should be the same as the path which is used when initializing phantesta
+  - `identifier` is a unique identifier that will be used to set the screenshots 
+     and phantesta-servers apart
+     
+To download snapshots from the server, run
+```bash
+    download-from-remote-phantesta --host localhost --port 3000 --downloadPath /home/screenshot --identifier identifierUsedWhenUploading
+```
+download-from-remote server takes in the following arguments:
+  - `host and port` specifies where the remote server is running
+  - `downloadPath` is the path the where all snapshots would be saved locally when downloading
+  - `identifier` is a unique identifier that was used used when uploading screenshots to the remote server
+  - `allFiles (optional)` if this is set to true, all files including diffs would be downloaded.
+                          If set to false (default), it would only let you download files after 
+                          all diffs have been resolved on the remote server.
+ 
+
 ## API
 
 ### new Phantesta(options)
