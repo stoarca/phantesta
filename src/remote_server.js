@@ -14,7 +14,7 @@ class RemoteServer {
   constructor(options) {
     this.port = options.port || 8000;
     this.maxPhantesta = options.maxPhantestaServers || 20;
-    this.screenshotPath = options.screenshotPath || '/home/phantesta';
+    this.screenshotPath = options.screenshotPath || '~/phantesta';
     this.phantestaHost = options.phantestaHost || '0.0.0.0';
 
     this.serversInUse = {};
