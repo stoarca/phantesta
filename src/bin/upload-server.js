@@ -7,29 +7,28 @@ import fs from 'fs';
 import argparse from 'argparse';
 
 let parser = new argparse.ArgumentParser();
-parser.addArgument(['--host'], {required: true});
-parser.addArgument(['--port'], {required: true});
+parser.addArgument(['--url'], {required: true});
 parser.addArgument(['--screenshotPath'], {required: true});
 parser.addArgument(['--identifier'], {required: true});
 
 let args = parser.parseArgs();
 let screenshotPath = args.screenshotPath;
 let identifier = args.identifier;
-let host = args.host;
-let port = args.port;
+let url = args.url;
 
 let phantesta = new Phantesta({
   screenshotPath: screenshotPath,
   makeUseOfPhantom: false,
 });
 
-const REMOTE_URL = `http://${host}:${port}`;
+const REMOTE_URL = `${url}/${identifier}`;
 
 let sendScreenshots = function(identifier) {
   phantesta.listOfDiffFiles( function (files) {
     for (let i = 0; i < files.length; ++i) {
-      let name = path.relative(path.resolve(phantesta.options.screenshotPath), files[i])
-          .slice(0, -phantesta.options.diffExt.length);
+      let name = path.relative(
+        path.resolve(phantesta.options.screenshotPath), files[i]
+      ).slice(0, -phantesta.options.diffExt.length);
 
       let goodImg = phantesta.getGoodPath(name);
       let newImg = phantesta.getNewPath(name);
@@ -40,7 +39,9 @@ let sendScreenshots = function(identifier) {
       _sendFile(diffImg, name + phantesta.options.diffExt, identifier);
     }
     if (files.length) {
-      console.log(`You can view the diffs at http://${host}:${port}/${identifier}/`);
+      console.log(
+        `You can view the diffs at ${REMOTE_URL}`
+      );
     } else {
       console.log('No files to upload');
     }
@@ -51,18 +52,29 @@ let _sendFile = function(file, fileName, identifier) {
 
   let newImageStream = fs.createReadStream(file);
 
-  let newImageReq = request.post(`${REMOTE_URL}/${identifier}/upload/${encodeURIComponent(fileName)}`);
+  let newImageReq = request.post(
+    `${REMOTE_URL}/upload/${encodeURIComponent(fileName)}`
+  );
 
   newImageReq.on('drain', function () {
     newImageStream.resume();
   });
   newImageReq.on('error', function (err) {
-    console.error('cannot send file' + ': ' + err);
+    console.error('cannot send file ' + fileName + ': ' + err);
+  });
+  newImageReq.on('response', function(resp) {
+    if (resp.statusCode !== 200) {
+      resp.on('data', function(data) {
+        console.error('cannot send file ' + fileName);
+        console.error(data.toString('utf8'));
+      });
+    }
   });
   newImageStream.on('end', function () {
     console.log('file uploaded');
   });
   newImageStream.on('error', function (err) {
+    console.log('asdfasdfasd');
     //consume error if no file exists
   });
   newImageStream.pipe(newImageReq);

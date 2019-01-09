@@ -212,10 +212,10 @@ class RemoteServer {
 
     getPort().then(port => {
 
-      let path = path.resolve(__dirname, 'bin/phantesta-server.js');
+      let p = path.resolve(__dirname, 'bin/phantesta-server.js');
 
       let phantestaProcess = child_process.exec(
-          `babel-node ${path} \\
+          `babel-node ${p} \\
           --host ${this.phantestaHost} --port ${port} \\
           --screenshotPath ${this.screenshotPath}/${identifier}`
       );

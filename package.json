@@ -1,13 +1,14 @@
 {
   "name": "phantesta",
-  "version": "4.0.10",
+  "version": "4.0.11",
   "description": "Screenshot diffing for tests",
   "main": "dist/phantesta.js",
   "scripts": {
     "build": "babel src --out-dir dist",
     "prepublish": "npm run build",
     "test": "babel-node tests/testphantesta.js",
-    "start-phantesta-server": "babel-node dist/bin/phantesta-server.js --host 0.0.0.0 --port 7991 --screenshotPath tests/screenshots"
+    "start-phantesta-server": "babel-node dist/bin/phantesta-server.js --host 0.0.0.0 --port 7991 --screenshotPath tests/screenshots",
+    "start-remote-server": "babel-node dist/bin/start-remote-server.js --port 3000 --savePath ~/haha --maxPhantestaServers 20"
   },
   "bin": {
     "phantesta-server": "dist/bin/phantesta-server.js",
@@ -37,6 +38,7 @@
     "q": "1.4.1",
     "recursive-readdir": "2.2.2",
     "request": "2.79.0",
+    "request-promise": "4.1.1",
     "restify": "7.1.1",
     "selenium-webdriver": "3.6.0",
     "underscore": "^1.9.1"
@@ -45,7 +47,6 @@
     "babel-cli": "6.22.2",
     "babel-plugin-transform-object-rest-spread": "6.22.0",
     "babel-preset-es2015": "6.22.0",
-    "babel-preset-stage-2": "6.17.0",
-    "request-promise": "4.1.1"
+    "babel-preset-stage-2": "6.17.0"
   }
 }

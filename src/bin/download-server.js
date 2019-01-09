@@ -9,8 +9,7 @@ import argparse from  'argparse';
 import _  from 'underscore';
 
 let parser = new argparse.ArgumentParser();
-parser.addArgument(['--host'], {required: true});
-parser.addArgument(['--port'], {required: true});
+parser.addArgument(['--url'], {required: true});
 parser.addArgument(['--identifier'], {required: true});
 parser.addArgument(['--downloadPath'], {required: true});
 parser.addArgument(['--allFiles'], {required: false});
@@ -18,11 +17,10 @@ parser.addArgument(['--allFiles'], {required: false});
 let args = parser.parseArgs();
 let downloadPath = args.downloadPath;
 let identifier = args.identifier;
-let host = args.host;
-let port = args.port;
+let url = args.url;
 let allFiles = args.allFiles === 'true' || false;
 
-const REMOTE_URL = `http://${host}:${port}/${identifier}`;
+const REMOTE_URL = `${url}/${identifier}`;
 
 let downloadFile = function (filePath) {
 
