@@ -74,8 +74,7 @@ let _sendFile = function(file, fileName, identifier) {
     console.log('file uploaded');
   });
   newImageStream.on('error', function (err) {
-    console.log('asdfasdfasd');
-    //consume error if no file exists
+    console.error('cannot send file ' + fileName + ': ' + err);
   });
   newImageStream.pipe(newImageReq);
 };

@@ -9,16 +9,27 @@ import recursive from 'recursive-readdir';
 import request from 'request';
 import bodyParser from 'body-parser';
 
-class RemoteServer {
+var expandPath = function(p) {
+  if (p[0] === '~') {
+    return p.join(process.env.HOME, p.slice(1));
+  }
+  return p;
+}
 
+class RemoteServer {
   constructor(options) {
     this.port = options.port || 8000;
     this.maxPhantesta = options.maxPhantestaServers || 20;
-    this.screenshotPath = options.screenshotPath || '~/phantesta';
+    this.screenshotPath = options.screenshotPath || '/tmp/phantesta';
     this.phantestaHost = options.phantestaHost || '0.0.0.0';
 
     this.serversInUse = {};
     this.serverQueue = [];
+  }
+
+  identifierPath(identifier) {
+    // TODO: not safe in case of malicious identifier
+    return expandPath(`${this.screenshotPath}/${identifier}`);
   }
 
   startServer() {
@@ -75,9 +86,9 @@ class RemoteServer {
       }
 
       if (req.body.allFiles) {
-        recursive(`${this.screenshotPath}/${req.params.identifier}`,  (err, files) => {
+        recursive(`${this.identifierPath(req.params.identifier)}`,  (err, files) => {
           res.send(files.map( (file) => {
-            return path.relative(`${this.screenshotPath}/${req.params.identifier}`, file);
+            return path.relative(`${this.identifierPath(req.params.identifier)}`, file);
           }));
         });
       } else {
@@ -89,9 +100,9 @@ class RemoteServer {
                 res.send({});
                 return;
               }
-              recursive(`${this.screenshotPath}/${req.params.identifier}`,  (err, files) => {
+              recursive(`${this.identifierPath(req.params.identifier)}`,  (err, files) => {
                 res.send(files.map( (file) => {
-                  return path.relative(`${this.screenshotPath}/${req.params.identifier}`, file);
+                  return path.relative(`${this.identifierPath(req.params.identifier)}`, file);
                 }));
               });
             });
@@ -100,7 +111,7 @@ class RemoteServer {
 
     app.get('/:identifier/download/:filePath', (req, res) => {
 
-      let filePath = path.resolve(`${this.screenshotPath}/${req.params.identifier}`, req.params.filePath);
+      let filePath = path.resolve(`${this.identifierPath(req.params.identifier)}`, req.params.filePath);
       let imageStream = fs.createReadStream(filePath);
 
       res.on('drain', function () {
@@ -127,7 +138,7 @@ class RemoteServer {
       let dir = path.dirname(fileName);
       let name = path.basename(fileName);
 
-      let filePath = `${this.screenshotPath}/${identifier}/${dir}`;
+      let filePath = `${this.identifierPath(identifier)}/${dir}`;
 
       //make sure directory exists
       mkdirp(filePath,  (err) => {
@@ -217,7 +228,7 @@ class RemoteServer {
       let phantestaProcess = child_process.exec(
           `babel-node ${p} \\
           --host ${this.phantestaHost} --port ${port} \\
-          --screenshotPath ${this.screenshotPath}/${identifier}`
+          --screenshotPath ${this.identifierPath(identifier)}`
       );
 
       phantestaProcess.stdout.on('data', (data) => {
@@ -240,7 +251,7 @@ class RemoteServer {
       delete this.serversInUse[identifier];
 
       //remove the screenshots dir
-      // fs.remove(`${this.screenshotPath}/${identifier}`, () => {
+      // fs.remove(`${this.identifierPath(identifier)}`, () => {
       //   delete this.serversInUse[identifier];
       // });
     });
