@@ -100,7 +100,7 @@ failed snapshots, with the option to view and accept diffs to snapshots.
 The remote phantesta server will allow to upload and download snaphots to and from
 a Remote Server along with the ability to view and review them. To deploy this remote server, simply run
 ```bash
-    remote-phantesta-server --port 3000 --savePath /home/phantesta --maxPhantestaServers 20
+    remote-phantesta-server --port 3000 --savePath /tmp/phantesta --maxPhantestaServers 20
 ```
 The remote server `optionally` takes in the following arguments:
    - `port` defaults to 3000
@@ -115,21 +115,21 @@ they can be viewed and reviewed.
 
 To upload snapshots to the server, run
 ```bash
-    upload-to-remote-phantesta --host localhost --port 3000 --screenshotPath /home/screenshot --identifier uniqueIdentifier
+    upload-to-remote-phantesta --url localhost:3000 --screenshotPath /home/screenshot --identifier uniqueIdentifier
 ```
-upload-to-remote server takes in the following arguments:
-  - `host and port` specifies where the remote server is running
+upload-to-remote-phantesta takes in the following arguments:
+  - `url` specifies where the remote server is running
   - `screenshotPath` is the path where all snapshots are located locally.
      This should be the same as the path which is used when initializing phantesta
   - `identifier` is a unique identifier that will be used to set the screenshots 
      and phantesta-servers apart
-     
+
 To download snapshots from the server, run
 ```bash
-    download-from-remote-phantesta --host localhost --port 3000 --downloadPath /home/screenshot --identifier identifierUsedWhenUploading
+    download-from-remote-phantesta --url localhost:3000 --downloadPath /home/screenshot --identifier identifierUsedWhenUploading
 ```
-download-from-remote server takes in the following arguments:
-  - `host and port` specifies where the remote server is running
+download-from-remote-phantesta takes in the following arguments:
+  - `url` specifies where the remote server is running
   - `downloadPath` is the path the where all snapshots would be saved locally when downloading
   - `identifier` is a unique identifier that was used used when uploading screenshots to the remote server
   - `allFiles (optional)` if this is set to true, all files including diffs would be downloaded.
