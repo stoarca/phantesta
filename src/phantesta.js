@@ -90,9 +90,7 @@ ScreenshotExpect.prototype.testSingle = async function(ssInfo, allowDiff) {
   }
 
   var includeOnlyBoxes = [];
-  var skipBoxes = [];
   includeOnlyBoxes = includeOnlyBoxes.concat(this.includeOnlyBoxes);
-  skipBoxes = skipBoxes.concat(this.skipBoxes);
   for(var i = 0; i < this.includeOnlyElementSelectors.length; i++) {
     var elements = await this.page.findElements(By.css(this.includeOnlyElementSelectors[i]));
     for(var j = 0; j < elements.length; j++) {
@@ -101,6 +99,8 @@ ScreenshotExpect.prototype.testSingle = async function(ssInfo, allowDiff) {
       includeOnlyBoxes.push({x: location.x, y: location.y, w: size.width, h: size.height});
     }
   }
+  var skipBoxes = [];
+  skipBoxes = skipBoxes.concat(this.skipBoxes);
   for(var i = 0; i < this.skipElementSelectors.length; i++) {
     var elements = await this.page.findElements(By.css(this.skipElementSelectors[i]));
     for(var j = 0; j < elements.length; j++) {
@@ -114,6 +114,7 @@ ScreenshotExpect.prototype.testSingle = async function(ssInfo, allowDiff) {
       this.phantesta.getNewPath(ssInfo.name),
       this.phantesta.getGoodPath(ssInfo.name),
       this.phantesta.getDiffPath(ssInfo.name),
+      ssInfo.offset,
       skipBoxes,
       includeOnlyBoxes
   )) {
@@ -155,10 +156,11 @@ ScreenshotExpect.prototype.toMatchScreenshot = async function(name, kwargs) {
   var wait = isPositiveInt(kwargs.wait) ? kwargs.wait : 1000;
   var result;
   while (true) {
-    await this.phantesta.screenshot(this.page, this.rootElement, this.phantesta.getNewPath(name));
+    let offset = await this.phantesta.screenshot(this.page, this.rootElement, this.phantesta.getNewPath(name));
     result = await this.testSingle({
       type: 'stable',
       name: name,
+      offset: offset,
     }, attempts > 1);
     attempts -= 1;
     if (result !== 'diff detected' || attempts === 0) {
@@ -176,10 +178,11 @@ ScreenshotExpect.prototype.toNotMatchScreenshot = async function(name, kwargs) {
   var wait = isPositiveInt(kwargs.wait) ? kwargs.wait : 1000;
   var result;
   while (true) {
-    await this.phantesta.screenshot(this.page, this.rootElement, this.phantesta.getNewPath(name));
+    var offset = await this.phantesta.screenshot(this.page, this.rootElement, this.phantesta.getNewPath(name));
     result = await this.testSingle({
       type: 'unstable',
       name: name,
+      offset: offset,
     }, attempts > 1);
     attempts -= 1;
     if (result !== 'diff detected' || attempts === 0) {
@@ -290,13 +293,17 @@ Phantesta.prototype.screenshot = async function(page, target, filename) {
     });
     await page.render(filename);
     await page.property('clipRect', prevClip);
+    return clipRect;
   } else if (isSelenium(page)) {
     var image;
+    var ret = null;
     if (target === null) {
       image = await page.takeScreenshot();
+      ret = await page.findElement(By.css('html')).getLocation();
     } else {
       var element = await page.findElement(By.css(target));
       image = await element.takeScreenshot();
+      ret = await page.findElement(By.css(target)).getLocation();
     }
     if (!image) {
       throw new Error(
@@ -305,14 +312,14 @@ Phantesta.prototype.screenshot = async function(page, target, filename) {
     }
     child_process.spawnSync('mkdir', ['-p', path.dirname(filename)]);
     fs.writeFileSync(filename, image, 'base64');
-
+    return ret;
   } else {
     throw new Error('Unable to determine type of page');
   }
 };
 
 Phantesta.prototype.expectSame = async function(name1, name2, excludeBoxes, includeBoxes) {
-  if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2), undefined, excludeBoxes, includeBoxes)) {
+  if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2), undefined, {}, excludeBoxes, includeBoxes)) {
     this.options.expectToBe(
         'fail: ' + name1 + ' is the same as ' + name2,
         'success: ' + name1 + ' is the same as ' + name2);
@@ -323,7 +330,7 @@ Phantesta.prototype.expectSame = async function(name1, name2, excludeBoxes, incl
   }
 };
 Phantesta.prototype.expectDiff = async function(name1, name2, excludeBoxes, includeBoxes) {
-  if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2), undefined, excludeBoxes, includeBoxes)) {
+  if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2), undefined, {}, excludeBoxes, includeBoxes)) {
     this.options.expectToBe(
         'success: ' + name1 + ' is different than ' + name2,
         'success: ' + name1 + ' is different than ' + name2);
@@ -333,10 +340,9 @@ Phantesta.prototype.expectDiff = async function(name1, name2, excludeBoxes, incl
         'success: ' + name1 + ' is different than ' + name2);
   }
 };
-Phantesta.prototype.isDiff = async function(filename1, filename2, diffPath, excludeBoxes, includeBoxes) {
-
+Phantesta.prototype.isDiff = async function(filename1, filename2, diffPath, offset, excludeBoxes, includeBoxes) {
   if (!this.options.makeUseOfPhantom || !includeBoxes || !includeBoxes.length) {
-    return imageMagickDoDiff(filename1, filename2, diffPath, excludeBoxes, includeBoxes);
+    return imageMagickDoDiff(filename1, filename2, diffPath, offset, excludeBoxes, includeBoxes);
   }
 
   if (!this.diffPage) {

@@ -262,6 +262,20 @@ describe('phantesta', function() {
       // await phantesta2.expect(page, null).toMatchScreenshot('selenium_full_page');
       await phantesta2.expect(page, 'div').toMatchScreenshot('selenium_full_page');
     }), 30000);
+    it('should be able to ignore selected elements', syncify(async function() {
+      var phantesta2 = new Phantesta({
+        screenshotPath: path.resolve(__dirname, '../screenshots/saved'),
+      });
+      var url = htmlServer.getUrl('/html/censor.html');
+      await page.get(url);
+      // HACK: this screenshot was originally taken with a different color
+      // in #inner-rect inside censor.html and saved
+      // After the color was changed in censor.html, we expect the test to
+      // still pass, even though the screenshot hasn't changed, due to censoring
+      await phantesta2.expect(page, '#outer-rect').censorMatching(
+        '#inner-rect'
+      ).toMatchScreenshot('selenium_censor_offset');
+    }), 30000);
     describe('should test one level grouping', function() {
       beforeEach(function() {
         phantesta.group('group1');

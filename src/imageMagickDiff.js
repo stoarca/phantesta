@@ -6,8 +6,7 @@ var dimensionOfImage;
 
 //TODO: for very large images, perhaps split it into smaller pieces and
 // then compare to optimize ?
-var doDiff = async function(filename1, filename2, diffFile, skipBoxes, includeBoxes) {
-
+var doDiff = async function(filename1, filename2, diffFile, offset, skipBoxes, includeBoxes) {
   var colourOfDiff = '"rgba(255, 0, 255, 255)"';//inner double quotes necessary
 
   var paddedImages = await resizeImages(filename1, filename2); //necessary since images might not be of same size
@@ -15,10 +14,18 @@ var doDiff = async function(filename1, filename2, diffFile, skipBoxes, includeBo
   var paddedImage2 = paddedImages[1];
 
   if(!!includeBoxes && includeBoxes.length) {
+    for (let i = 0; i < includeBoxes.length; ++i) {
+      includeBoxes[i].x -= offset.x || 0;
+      includeBoxes[i].y -= offset.y || 0;
+    }
     await includeOnlyAsync([paddedImage1, paddedImage2], includeBoxes);
   }
 
   if (!!skipBoxes && skipBoxes.length) {
+    for (let i = 0; i < skipBoxes.length; ++i) {
+      skipBoxes[i].x -= offset.x || 0;
+      skipBoxes[i].y -= offset.y || 0;
+    }
     await maskOutAsync([paddedImage1, paddedImage2], skipBoxes);
   }
 
