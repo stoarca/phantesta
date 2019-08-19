@@ -44,6 +44,8 @@ var ScreenshotExpect = function(phantesta, page, rootElement) {
   if(typeof rootElement === 'undefined') {
     rootElement = 'html';
   }
+  this.defaultAttempt = 1;
+  this.defaultWait = 1000;
   this.phantesta = phantesta;
   this.rootElement = rootElement;
   this.page = page;
@@ -152,8 +154,8 @@ ScreenshotExpect.prototype.testSingle = async function(ssInfo, allowDiff) {
 
 ScreenshotExpect.prototype.toMatchScreenshot = async function(name, kwargs) {
   kwargs = kwargs || {};
-  var attempts = isPositiveInt(kwargs.attempts) ? kwargs.attempts : 1;
-  var wait = isPositiveInt(kwargs.wait) ? kwargs.wait : 1000;
+  var attempts = isPositiveInt(kwargs.attempts) ? kwargs.attempts : this.defaultAttempt;
+  var wait = isPositiveInt(kwargs.wait) ? kwargs.wait : this.defaultWait;
   var result;
   while (true) {
     let offset = await this.phantesta.screenshot(this.page, this.rootElement, this.phantesta.getNewPath(name));
@@ -174,8 +176,8 @@ ScreenshotExpect.prototype.toMatchScreenshot = async function(name, kwargs) {
 
 ScreenshotExpect.prototype.toNotMatchScreenshot = async function(name, kwargs) {
   kwargs = kwargs || {};
-  var attempts = isPositiveInt(kwargs.attempts) ? kwargs.attempts : 1;
-  var wait = isPositiveInt(kwargs.wait) ? kwargs.wait : 1000;
+  var attempts = isPositiveInt(kwargs.attempts) ? kwargs.attempts : this.defaultAttempt;
+  var wait = isPositiveInt(kwargs.wait) ? kwargs.wait : this.defaultWait;
   var result;
   while (true) {
     var offset = await this.phantesta.screenshot(this.page, this.rootElement, this.phantesta.getNewPath(name));
@@ -216,6 +218,8 @@ var Phantesta = function(options) {
       expect(actual).not.toBe(expected);
     },
     makeUseOfPhantom: true,
+    defaultAttempt: 1,
+    defaultWait: 1000
   };
   this.options = {
     ...defaults,
@@ -259,7 +263,10 @@ Phantesta.prototype.getDiffPath = function(name) {
   return path.resolve(this.getCurrentPath(), name + this.options.diffExt);
 };
 Phantesta.prototype.expect = function(page, rootElement) {
-  return new ScreenshotExpect(this, page, rootElement);
+  let screenshotExpect = new ScreenshotExpect(this, page, rootElement);
+  screenshotExpect.defaultAttempt = this.defaultAttempt;
+  screenshotExpect.defaultWait = this.defaultWait;
+  return screenshotExpect;
 };
 Phantesta.prototype.screenshot = async function(page, target, filename) {
   if (isPhantom(page)) {
