@@ -264,8 +264,8 @@ Phantesta.prototype.getDiffPath = function(name) {
 };
 Phantesta.prototype.expect = function(page, rootElement) {
   let screenshotExpect = new ScreenshotExpect(this, page, rootElement);
-  screenshotExpect.defaultAttempt = this.defaultAttempt;
-  screenshotExpect.defaultWait = this.defaultWait;
+  screenshotExpect.defaultAttempt = this.options.defaultAttempt;
+  screenshotExpect.defaultWait = this.options.defaultWait;
   return screenshotExpect;
 };
 Phantesta.prototype.screenshot = async function(page, target, filename) {
