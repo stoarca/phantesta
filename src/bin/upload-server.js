@@ -7,9 +7,9 @@ import fs from 'fs';
 import argparse from 'argparse';
 
 let parser = new argparse.ArgumentParser();
-parser.addArgument(['--url'], {required: true});
-parser.addArgument(['--screenshotPath'], {required: true});
-parser.addArgument(['--identifier'], {required: true});
+parser.add_argument(['--url'], {required: true});
+parser.add_argument(['--screenshotPath'], {required: true});
+parser.add_argument(['--identifier'], {required: true});
 
 let args = parser.parseArgs();
 let screenshotPath = args.screenshotPath;
@@ -48,7 +48,7 @@ let sendScreenshots = function(identifier) {
   })
 };
 
-let _sendFile = function(file, fileName, identifier) {
+let _sendFile = function(file, fileName) {
 
   let newImageStream = fs.createReadStream(file);
 
