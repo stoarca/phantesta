@@ -1,0 +1,69 @@
+<html>
+  <head>
+    <style>
+      th {
+        min-width: 200px;
+      }
+      body, td {
+        text-align: center;
+      }
+      button {
+        float: right;
+      }
+      table {
+        margin: 0 auto;
+        margin-top: 50px;
+      }​
+    </style>
+
+    <script>
+      const listServers = function () {
+        const content = document.getElementById('content');
+        while (content.hasChildNodes()) {
+          content.removeChild(content.lastChild);
+        }
+        fetch('/identifiers', {
+          method: 'get',
+        })
+        .then(function(resp) {
+          return resp.json()
+        })
+        .then(function(resp) {
+          for (let i = 0; i < resp.servers.length; ++i) {
+            let server = resp.servers[i];
+
+            let row = document.createElement('tr');
+
+            let identifier = document.createElement('td');
+            let identifierUrl = document.createElement('a');
+            identifierUrl.innerHTML = server.identifier;
+            identifierUrl.setAttribute('href', server.url);
+            identifier.appendChild(identifierUrl);
+            row.appendChild(identifier);
+
+            let date = document.createElement('td');
+            date.innerHTML = server.date;
+            row.appendChild(date);
+
+            content.appendChild(row);
+          };
+        });
+      };
+
+      document.addEventListener('DOMContentLoaded', listServers);
+    </script>
+  </head>
+
+  <body>
+    <table cellpadding="10">
+      <thead>
+        <tr>
+          <th>Identifier</th>
+          <th>Date created</th>
+        </tr>
+      </thead>
+      <tbody id="content">
+      </tbody>
+    </table>
+  </body>
+</html>

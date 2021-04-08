@@ -4,9 +4,9 @@ import argparse from 'argparse';
 import Phantesta from '../phantesta';
 
 var parser = new argparse.ArgumentParser();
-parser.addArgument(['--host'], {required: true});
-parser.addArgument(['--port'], {required: true});
-parser.addArgument(['--screenshotPath'], {required: true});
+parser.add_argument(['--host'], {required: true});
+parser.add_argument(['--port'], {required: true});
+parser.add_argument(['--screenshotPath'], {required: true});
 var args = parser.parseArgs();
 
 var phantesta = new Phantesta(

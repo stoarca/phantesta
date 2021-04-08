@@ -9,7 +9,8 @@ var dimensionOfImage;
 var doDiff = async function(filename1, filename2, diffFile, offset, skipBoxes, includeBoxes) {
   var colourOfDiff = '"rgba(255, 0, 255, 255)"';//inner double quotes necessary
 
-  var paddedImages = await resizeImages(filename1, filename2); //necessary since images might not be of same size
+  //necessary since images might not be of same size
+  var paddedImages = await resizeImages(filename1, filename2);
   var paddedImage1 = paddedImages[0];
   var paddedImage2 = paddedImages[1];
 
@@ -213,7 +214,8 @@ var checkStdOut = function(cmdToRun) {
   });
 };
 
-var deleteFiles = function(filenames) {
+// eslint-disable-next-line no-unused-vars
+const deleteFiles = function(filenames) {
   return Promise.all(filenames.map(function(filename) {
     return new Promise(function(resolve) {
       fs.unlinkSync(filename);

@@ -1,0 +1,118 @@
+<html>
+<head>
+  <style>
+    body {
+      margin-bottom: 600px;
+    }
+    img {
+      border: 1px solid magenta;
+      max-width: 300px;
+      min-width: 100px;
+      width: 100%;
+      min-height: 50px;
+    }
+    #big_image {
+      width: 100%;
+      max-width: fit-content;
+      border: 2px solid magenta;
+    }
+    td {
+      height: 300px;
+      max-width: 10%;
+      min-width: 100px;
+    }
+    #count {
+      font-size: 36px;
+      width: 300px;
+      height: 100px;
+      position: fixed;
+      right: 30px;
+      bottom: 440px;
+    }
+    #big_image_container {
+      position: fixed;
+      top: 0;
+      right:0;
+      pointer-events: none;
+    }
+  </style>
+  <script>
+    var wrapCell = function(element) {
+      var cell = document.createElement('td');
+      if (element) {
+        cell.appendChild(element);
+      }
+      return cell;
+    }
+    var addImageRow = function(container, imgSrc) {
+      if (!imgSrc) {
+        container.appendChild(wrapCell(null));
+        return;
+      }
+      var a = document.createElement('a');
+      a.href = imgSrc;
+      a.target = '_blank';
+      var image = document.createElement('img');
+      image.src = imgSrc;
+
+      image.addEventListener('mouseenter', function(event) {
+        document.getElementById('big_image_container').style.display = 'block';
+        document.getElementById('big_image').src = imgSrc;
+      })
+
+      image.addEventListener('mouseleave', function(event) {
+        document.getElementById('big_image_container').style.display = 'none';
+      })
+
+      a.appendChild(image);
+      container.appendChild(wrapCell(a));
+    }
+
+    const listDiffs = function() {
+      return fetch('./files', {
+        method: 'get',
+      }).then(function(resp) { return resp.json() }).then(function(resp) {
+        const content = document.getElementById('content');
+        for (var i = 0; i < resp.diffs.length; ++i) {
+          var diff = resp.diffs[i];
+          var row = document.createElement('tr');
+
+          var name = document.createElement('td');
+          name.innerHTML = diff.name;
+          row.appendChild(name);
+
+          addImageRow(row, diff.goodSrc);
+          addImageRow(row, diff.newSrc);
+          addImageRow(row, diff.diffSrc);
+
+          content.appendChild(row);
+        };
+        document.getElementById('count').innerHTML = `${resp.diffs.length} tests failing`;
+      })
+      .catch(function(e) {
+        console.error('Failed to fetch job diffs');
+        console.error(e);
+      });
+    };
+
+    document.addEventListener('DOMContentLoaded', listDiffs);
+  </script>
+</head>
+<body>
+  <table>
+    <thead>
+      <th>Name</th>
+      <th>Good</th>
+      <th>New</th>
+      <th>Diff</th>
+    </thead>
+    <tbody id="content">
+    </tbody>
+  </table>
+  <div id="big_image_container">
+    <img id="big_image" />
+  </div>
+  <div id="count">
+  </div>
+</body>
+</html>

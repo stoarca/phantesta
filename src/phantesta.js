@@ -4,8 +4,7 @@ import express from 'express';
 import fs from 'fs';
 import glob from 'glob';
 import path from 'path';
-import { By, until } from 'selenium-webdriver';
-import q from 'q';
+import { By } from 'selenium-webdriver';
 import imageMagickDoDiff from './imageMagickDiff';
 import phantom from 'phantom';
 import exitHook from 'async-exit-hook';
@@ -91,23 +90,23 @@ ScreenshotExpect.prototype.testSingle = async function(ssInfo, allowDiff) {
     return;
   }
 
-  var includeOnlyBoxes = [];
+  let includeOnlyBoxes = [];
   includeOnlyBoxes = includeOnlyBoxes.concat(this.includeOnlyBoxes);
-  for(var i = 0; i < this.includeOnlyElementSelectors.length; i++) {
-    var elements = await this.page.findElements(By.css(this.includeOnlyElementSelectors[i]));
-    for(var j = 0; j < elements.length; j++) {
-      var location = await elements[j].getLocation();
-      var size = await elements[j].getSize();
+  for(let i = 0; i < this.includeOnlyElementSelectors.length; i++) {
+    const elements = await this.page.findElements(By.css(this.includeOnlyElementSelectors[i]));
+    for(let j = 0; j < elements.length; j++) {
+      const location = await elements[j].getLocation();
+      const size = await elements[j].getSize();
       includeOnlyBoxes.push({x: location.x, y: location.y, w: size.width, h: size.height});
     }
   }
-  var skipBoxes = [];
+  let skipBoxes = [];
   skipBoxes = skipBoxes.concat(this.skipBoxes);
-  for(var i = 0; i < this.skipElementSelectors.length; i++) {
-    var elements = await this.page.findElements(By.css(this.skipElementSelectors[i]));
-    for(var j = 0; j < elements.length; j++) {
-      var location = await elements[j].getLocation();
-      var size = await elements[j].getSize();
+  for(let i = 0; i < this.skipElementSelectors.length; i++) {
+    const elements = await this.page.findElements(By.css(this.skipElementSelectors[i]));
+    for(let j = 0; j < elements.length; j++) {
+      const location = await elements[j].getLocation();
+      const size = await elements[j].getSize();
       skipBoxes.push({x: location.x, y: location.y, w: size.width, h: size.height});
     }
   }
@@ -157,8 +156,11 @@ ScreenshotExpect.prototype.toMatchScreenshot = async function(name, kwargs) {
   var attempts = isPositiveInt(kwargs.attempts) ? kwargs.attempts : this.defaultAttempt;
   var wait = isPositiveInt(kwargs.wait) ? kwargs.wait : this.defaultWait;
   var result;
+  // eslint-disable-next-line no-constant-condition
   while (true) {
-    let offset = await this.phantesta.screenshot(this.page, this.rootElement, this.phantesta.getNewPath(name));
+    let offset = await this.phantesta.screenshot(
+      this.page, this.rootElement, this.phantesta.getNewPath(name)
+    );
     result = await this.testSingle({
       type: 'stable',
       name: name,
@@ -179,8 +181,11 @@ ScreenshotExpect.prototype.toNotMatchScreenshot = async function(name, kwargs) {
   var attempts = isPositiveInt(kwargs.attempts) ? kwargs.attempts : this.defaultAttempt;
   var wait = isPositiveInt(kwargs.wait) ? kwargs.wait : this.defaultWait;
   var result;
+  // eslint-disable-next-line no-constant-condition
   while (true) {
-    var offset = await this.phantesta.screenshot(this.page, this.rootElement, this.phantesta.getNewPath(name));
+    var offset = await this.phantesta.screenshot(
+      this.page, this.rootElement, this.phantesta.getNewPath(name)
+    );
     result = await this.testSingle({
       type: 'unstable',
       name: name,
@@ -326,7 +331,14 @@ Phantesta.prototype.screenshot = async function(page, target, filename) {
 };
 
 Phantesta.prototype.expectSame = async function(name1, name2, excludeBoxes, includeBoxes) {
-  if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2), undefined, {}, excludeBoxes, includeBoxes)) {
+  if (await this.isDiff(
+    this.getGoodPath(name1),
+    this.getGoodPath(name2),
+    undefined,
+    {},
+    excludeBoxes,
+    includeBoxes
+  )) {
     this.options.expectToBe(
         'fail: ' + name1 + ' is the same as ' + name2,
         'success: ' + name1 + ' is the same as ' + name2);
@@ -337,7 +349,14 @@ Phantesta.prototype.expectSame = async function(name1, name2, excludeBoxes, incl
   }
 };
 Phantesta.prototype.expectDiff = async function(name1, name2, excludeBoxes, includeBoxes) {
-  if (await this.isDiff(this.getGoodPath(name1), this.getGoodPath(name2), undefined, {}, excludeBoxes, includeBoxes)) {
+  if (await this.isDiff(
+    this.getGoodPath(name1),
+    this.getGoodPath(name2),
+    undefined,
+    {},
+    excludeBoxes,
+    includeBoxes
+  )) {
     this.options.expectToBe(
         'success: ' + name1 + ' is different than ' + name2,
         'success: ' + name1 + ' is different than ' + name2);
@@ -347,7 +366,9 @@ Phantesta.prototype.expectDiff = async function(name1, name2, excludeBoxes, incl
         'success: ' + name1 + ' is different than ' + name2);
   }
 };
-Phantesta.prototype.isDiff = async function(filename1, filename2, diffPath, offset, excludeBoxes, includeBoxes) {
+Phantesta.prototype.isDiff = async function(
+  filename1, filename2, diffPath, offset, excludeBoxes, includeBoxes
+) {
   if (!this.options.makeUseOfPhantom || !includeBoxes || !includeBoxes.length) {
     return imageMagickDoDiff(filename1, filename2, diffPath, offset, excludeBoxes, includeBoxes);
   }
@@ -394,7 +415,7 @@ Phantesta.prototype.destructiveClearAllSnapshots = async function() {
 
 Phantesta.prototype.listOfDiffFiles = function(f) {
   var dir = path.resolve(this.options.screenshotPath, '**/*' + this.options.diffExt);
-  var failedFiles = glob(dir, function(err, files) {
+  const failedFiles = glob(dir, function(err, files) {
     files = files.map(function(filename) {
       return {
         name: filename,
@@ -407,6 +428,7 @@ Phantesta.prototype.listOfDiffFiles = function(f) {
     });
     f(files);
   });
+  return failedFiles;
 };
 Phantesta.prototype.clearDiffs = function(f) {
   var self = this;
