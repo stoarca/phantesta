@@ -95,9 +95,8 @@ ScreenshotExpect.prototype.testSingle = async function(ssInfo, allowDiff) {
   for(let i = 0; i < this.includeOnlyElementSelectors.length; i++) {
     const elements = await this.page.findElements(By.css(this.includeOnlyElementSelectors[i]));
     for(let j = 0; j < elements.length; j++) {
-      const location = await elements[j].getLocation();
-      const size = await elements[j].getSize();
-      includeOnlyBoxes.push({x: location.x, y: location.y, w: size.width, h: size.height});
+      const rect = await elements[j].getRect();
+      includeOnlyBoxes.push({x: rect.x, y: rect.y, w: rect.width, h: rect.height});
     }
   }
   let skipBoxes = [];
@@ -105,9 +104,8 @@ ScreenshotExpect.prototype.testSingle = async function(ssInfo, allowDiff) {
   for(let i = 0; i < this.skipElementSelectors.length; i++) {
     const elements = await this.page.findElements(By.css(this.skipElementSelectors[i]));
     for(let j = 0; j < elements.length; j++) {
-      const location = await elements[j].getLocation();
-      const size = await elements[j].getSize();
-      skipBoxes.push({x: location.x, y: location.y, w: size.width, h: size.height});
+      const rect = await elements[j].getRect();
+      skipBoxes.push({x: rect.x, y: rect.y, w: rect.width, h: rect.height});
     }
   }
 
@@ -311,11 +309,11 @@ Phantesta.prototype.screenshot = async function(page, target, filename) {
     var ret = null;
     if (target === null) {
       image = await page.takeScreenshot();
-      ret = await page.findElement(By.css('html')).getLocation();
+      ret = await page.findElement(By.css('html')).getRect();
     } else {
       var element = await page.findElement(By.css(target));
       image = await element.takeScreenshot();
-      ret = await page.findElement(By.css(target)).getLocation();
+      ret = await page.findElement(By.css(target)).getRect();
     }
     if (!image) {
       throw new Error(
