@@ -1,6 +1,6 @@
 {
   "name": "phantesta",
-  "version": "4.0.19",
+  "version": "4.0.20",
   "description": "Screenshot diffing for tests",
   "main": "dist/phantesta.js",
   "scripts": {
@@ -29,13 +29,13 @@
     "body-parser": "1.19.0",
     "esm": "3.2.25",
     "express": "4.17.1",
-    "geckodriver": "1.10.0",
+    "geckodriver": "2.0.0",
     "glob": "7.1.6",
     "jasmine_test_utils": "2.0.3",
     "phantom": "4.0.0",
     "request": "2.79.0",
     "request-promise": "4.1.1",
-    "selenium-webdriver": "3.6.0"
+    "selenium-webdriver": "4.0.0-beta.3"
   },
   "devDependencies": {
     "babel-cli": "6.26.0",

@@ -192,9 +192,8 @@ describe('phantesta', function() {
       var tmpdir = fs.mkdtempSync('/tmp/phantesta');
       var chromeOpts = new chrome.Options();
       chromeOpts.addArguments('--user-data-dir=' + tmpdir);
-      var profile = new firefox.Profile();
       var firefoxOpts = new firefox.Options();
-      firefoxOpts.setProfile(profile);
+      firefoxOpts.setProfile(tmpdir);
       return new Builder()
           .forBrowser('firefox')
           .setChromeOptions(chromeOpts)
@@ -352,9 +351,8 @@ describe('phantesta', function() {
         var tmpdir = fs.mkdtempSync('/tmp/phantesta');
         var chromeOpts = new chrome.Options();
         chromeOpts.addArguments('--user-data-dir=' + tmpdir);
-        var profile = new firefox.Profile();
         var firefoxOpts = new firefox.Options();
-        firefoxOpts.setProfile(profile);
+        firefoxOpts.setProfile(tmpdir);
         return new Builder()
             .forBrowser('firefox')
             .setChromeOptions(chromeOpts)
