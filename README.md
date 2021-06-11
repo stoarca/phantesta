@@ -1,6 +1,6 @@
 # Phantesta
 
-Phantesta is a testing library built on top of phantomjs-node or selenium.
+Phantesta is a testing library built on top of selenium.
 It allows you to
 write regression tests to ensure a rendered portion of a page does not change.
 
@@ -22,41 +22,41 @@ npm install --save-dev phantesta
 ```js
 import { syncify } from 'jasmine_test_utils';
 import path from 'path';
-import phantom from 'phantom';
 import Phantesta from 'phantesta';
 
 describe('my test suite', function() {
-  var instance = null;
   var page = null;
   var phantesta = null;
 
-  beforeAll(syncify(async function() {
-    instance = await phantom.create(['--web-security=false']);
-  }));
-  afterAll(syncify(async function() {
-    await instance.exit();
-  }));
+  var createDriver = async function() {
+    var tmpdir = fs.mkdtempSync('/tmp/phantesta');
+    var chromeOpts = new chrome.Options();
+    chromeOpts.addArguments('--user-data-dir=' + tmpdir);
+    var profile = new firefox.Profile();
+    var firefoxOpts = new firefox.Options();
+    firefoxOpts.setProfile(profile);
+    return new Builder()
+        .forBrowser('firefox')
+        .setChromeOptions(chromeOpts)
+        .setFirefoxOptions(firefoxOpts)
+        .build();
+  };
+
   beforeEach(syncify(async function() {
     phantesta = new Phantesta({
       screenshotPath: path.resolve(__dirname, '../screenshots'),
     });
-    page = await instance.createPage();
-  }));
-  afterEach(syncify(async function() {
-    if (page) {
-      await instance.execute('phantom', 'invokeMethod', ['clearCookies']);
-      await page.close();
-      page = null;
-    }
-  }));
-
-  beforeEach(function() {
     phantesta.group(__dirname);
-  });
 
-  afterEach(function() {
+    page = await createDriver();
+  }));
+
+  afterEach(syncify(async function() {
     phantesta.ungroup();
-  });
+
+    await page.quit();
+    phantesta.destructiveClearAllSnapshots();
+  }));
 
   it('should do some tests', syncify(async function() {
     await page.open('http://www.google.com');
@@ -151,9 +151,7 @@ framework if you're not using jasmine.
 
 ### async Phantesta.prototype.expect(page, target) -> ScreenshotExpect
 
- - `page` is one of:
-   - the node-phantomjs page of which a screenshot is to be taken
-   - the selenium driver of which a screenshot is to be taken
+ - `page` is the selenium driver of which a screenshot is to be taken
  - `target` is a selector used to target a portion of the page
 
 Passes if the screenshot is unchanged relative to the good `name` screenshot.

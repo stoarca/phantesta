@@ -6,8 +6,6 @@ import glob from 'glob';
 import path from 'path';
 import { By } from 'selenium-webdriver';
 import imageMagickDoDiff from './imageMagickDiff';
-import phantom from 'phantom';
-import exitHook from 'async-exit-hook';
 
 var safeUnlinkSync = function(file) {
   try {
@@ -28,10 +26,6 @@ var copy = function(src, dst) {
 
 var isSelenium = function(page) {
   return !!page.takeScreenshot;
-};
-
-var isPhantom = function(page) {
-  return !!page.render;
 };
 
 var isPositiveInt = function(x) {
@@ -119,14 +113,6 @@ ScreenshotExpect.prototype.testSingle = async function(ssInfo, allowDiff) {
   )) {
     if (allowDiff) {
       return 'diff detected';
-    }
-
-    if (includeOnlyBoxes && includeOnlyBoxes.length && this.phantesta.options.makeUseOfPhantom) {
-      await this.phantesta.screenshot(
-          this.phantesta.diffPage,
-          '#result > img',
-          this.phantesta.getDiffPath(ssInfo.name)
-      );
     }
 
     var showPaths = JSON.stringify({
@@ -220,7 +206,6 @@ var Phantesta = function(options) {
     expectNotToBe: function(actual, expected) {
       expect(actual).not.toBe(expected);
     },
-    makeUseOfPhantom: true,
     defaultAttempt: 1,
     defaultWait: 1000
   };
@@ -228,22 +213,6 @@ var Phantesta = function(options) {
     ...defaults,
     ...options,
   };
-
-  if (this.options.makeUseOfPhantom) {
-    var self = this;
-    this.diffPagePromise = phantom.create(['--web-security=false'])
-        .then(function(instance) {
-          self.instance = instance;
-          return self.instance.createPage();
-        })
-        .then(function(diffPage) {
-          self.diffPage = diffPage;
-        });
-
-    exitHook(callback => {
-      this.instance.exit().then(() => callback);
-    });
-  }
 };
 Phantesta.prototype.group = function(groupName) {
   this.options.subPath.push(groupName);
@@ -272,39 +241,7 @@ Phantesta.prototype.expect = function(page, rootElement) {
   return screenshotExpect;
 };
 Phantesta.prototype.screenshot = async function(page, target, filename) {
-  if (isPhantom(page)) {
-    var prevClip = await page.property('clipRect');
-    var clipRect = await page.evaluate(function(target) {
-      if (target === null) {
-        return {
-          left: 0,
-          top: 0,
-          right: document.body.scrollWidth,
-          bottom: document.body.scrollHeight,
-          x: 0,
-          y: 0,
-          width: document.body.scrollWidth,
-          height: document.body.scrollHeight
-        }
-      } else {
-        return document.querySelectorAll(target)[0].getBoundingClientRect();
-      }
-    }, target);
-    if (!clipRect) {
-      throw new Error(
-        `Unable to take screenshot of target: ${target} with path ${filename}`
-      );
-    }
-    await page.property('clipRect', {
-      top: clipRect.top,
-      left: clipRect.left,
-      width: clipRect.width,
-      height: clipRect.height,
-    });
-    await page.render(filename);
-    await page.property('clipRect', prevClip);
-    return clipRect;
-  } else if (isSelenium(page)) {
+  if (isSelenium(page)) {
     var image;
     var ret = null;
     if (target === null) {
@@ -324,8 +261,19 @@ Phantesta.prototype.screenshot = async function(page, target, filename) {
     fs.writeFileSync(filename, image, 'base64');
     return ret;
   } else {
-    throw new Error('Unable to determine type of page');
+    var element = await page.findElement(By.css(target));
+    image = await element.takeScreenshot();
+    ret = await page.findElement(By.css(target)).getLocation();
   }
+
+  if (!image) {
+    throw new Error(
+      `Unable to take screenshot of target: ${target} with path ${filename}`
+    );
+  }
+  child_process.spawnSync('mkdir', ['-p', path.dirname(filename)]);
+  fs.writeFileSync(filename, image, 'base64');
+  return ret;
 };
 
 Phantesta.prototype.expectSame = async function(name1, name2, excludeBoxes, includeBoxes) {
@@ -367,37 +315,9 @@ Phantesta.prototype.expectDiff = async function(name1, name2, excludeBoxes, incl
 Phantesta.prototype.isDiff = async function(
   filename1, filename2, diffPath, offset, excludeBoxes, includeBoxes
 ) {
-  if (!this.options.makeUseOfPhantom || !includeBoxes || !includeBoxes.length) {
-    return imageMagickDoDiff(filename1, filename2, diffPath, offset, excludeBoxes, includeBoxes);
-  }
-
-  if (!this.diffPage) {
-    await this.diffPagePromise;
-  }
-
-  await this.diffPage.open('about:blank');
-  var url = 'file:///' + path.resolve(__dirname, '../resemble.html');
-  var stat = await this.diffPage.open(url);
-  this.options.expectToBe(stat, 'success');
-  await this.diffPage.uploadFile('#a', filename1);
-  await this.diffPage.uploadFile('#b', filename2);
-  await this.diffPage.evaluate(function() {
-    window.imageDiffer = new ImageDiffer();
-    return window.imageDiffer
-        .includeOnlyBoxes(arguments[1])
-        .censorBoxes(arguments[0])
-        .doDiff();
-  }, excludeBoxes, includeBoxes);
-  var ret = null;
-  while (ret === null || ret === 'RESULT NOT READY') {
-    ret = await this.diffPage.evaluate(function() {
-      if (!window.imageDiffer.isReady()) {
-        return 'RESULT NOT READY';
-      }
-      return window.imageDiffer.getResult();
-    });
-  }
-  return ret.rawMisMatchPercentage > 0;
+  return imageMagickDoDiff(
+    filename1, filename2, diffPath, offset, excludeBoxes, includeBoxes
+  );
 };
 
 Phantesta.prototype.ssInfoExpect = function(ssInfo, actual, expected) {

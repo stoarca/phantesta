@@ -10,8 +10,7 @@ parser.add_argument(['--screenshotPath'], {required: true});
 var args = parser.parseArgs();
 
 var phantesta = new Phantesta(
-    { screenshotPath: args.screenshotPath,
-      makeUseOfPhantom: false,
+    { screenshotPath: args.screenshotPath
     });
 phantesta.startServer({
   host: args.host,
