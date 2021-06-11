@@ -24,7 +24,6 @@ let diffExt = args.diffExt;
 
 let phantesta = new Phantesta({
   screenshotPath: screenshotPath,
-  makeUseOfPhantom: false,
   goodExt: goodExt,
   newExt: newExt,
   diffExt: diffExt
