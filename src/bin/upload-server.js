@@ -10,15 +10,24 @@ let parser = new argparse.ArgumentParser();
 parser.add_argument(['--url'], {required: true});
 parser.add_argument(['--screenshotPath'], {required: true});
 parser.add_argument(['--identifier'], {required: true});
+parser.add_argument(['--goodExt'], {required: false});
+parser.add_argument(['--newExt'], {required: false});
+parser.add_argument(['--diffExt'], {required: false});
 
 let args = parser.parseArgs();
 let screenshotPath = args.screenshotPath;
 let identifier = args.identifier;
 let url = args.url;
+let goodExt = args.goodExt;
+let newExt = args.newExt;
+let diffExt = args.diffExt;
 
 let phantesta = new Phantesta({
   screenshotPath: screenshotPath,
   makeUseOfPhantom: false,
+  goodExt: goodExt,
+  newExt: newExt,
+  diffExt: diffExt
 });
 
 const REMOTE_URL = `${url}/${identifier}`;
