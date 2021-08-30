@@ -43,9 +43,23 @@ let sendScreenshots = function(identifier) {
       let newImg = phantesta.getNewPath(name);
       let diffImg = phantesta.getDiffPath(name);
 
-      _sendFile(goodImg, name + phantesta.options.goodExt, identifier);
-      _sendFile(newImg, name + phantesta.options.newExt, identifier);
-      _sendFile(diffImg, name + phantesta.options.diffExt, identifier);
+      _sendFile(
+        goodImg,
+        _getFileName(name, 'good', _getFileType(phantesta.options.goodExt)),
+        identifier
+      );
+
+      _sendFile(
+        newImg,
+        _getFileName(name, 'new', _getFileType(phantesta.options.newExt)),
+        identifier
+      );
+
+      _sendFile(
+        diffImg,
+        _getFileName(name, 'diff', _getFileType(phantesta.options.diffExt)),
+        identifier
+      );
     }
     if (files.length) {
       console.log(
@@ -57,8 +71,16 @@ let sendScreenshots = function(identifier) {
   })
 };
 
-let _sendFile = function(file, fileName) {
+const _getFileType = function(ext) {
+  const splitExt = ext.split('.');
+  return splitExt[splitExt.length - 1];
+};
 
+const _getFileName = function(fileName, remoteExt, fileType) {
+  return `${fileName}.${remoteExt}.${fileType}`;
+};
+
+let _sendFile = function(file, fileName) {
   let newImageStream = fs.createReadStream(file);
 
   let newImageReq = request.post(
@@ -68,9 +90,11 @@ let _sendFile = function(file, fileName) {
   newImageReq.on('drain', function () {
     newImageStream.resume();
   });
+
   newImageReq.on('error', function (err) {
     console.error('cannot send file ' + fileName + ': ' + err);
   });
+
   newImageReq.on('response', function(resp) {
     if (resp.statusCode !== 200) {
       resp.on('data', function(data) {
@@ -79,12 +103,15 @@ let _sendFile = function(file, fileName) {
       });
     }
   });
+
   newImageStream.on('end', function () {
     console.log('file uploaded');
   });
+
   newImageStream.on('error', function (err) {
     console.error('cannot send file ' + fileName + ': ' + err);
   });
+
   newImageStream.pipe(newImageReq);
 };
 
