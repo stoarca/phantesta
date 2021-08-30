@@ -112,17 +112,16 @@ class RemoteServer {
     app.post('/:identifier/upload/:fileName',  (req, res) => {
       const {identifier, fileName} = req.params;
       try {
-        let dir = path.dirname(fileName);
         let name = path.basename(fileName);
 
         let identifierFolderPath = `${this.identifierPath(identifier)}`;
-        let filePath = `${this.identifierPath(identifier)}/${dir}`;
 
         if (!fs.existsSync(identifierFolderPath)) {
           fs.mkdirSync(identifierFolderPath);
         }
+
         //pipe it to /commitNumber/screenShots
-        let stream = fs.createWriteStream(`${filePath}/${name}`);
+        let stream = fs.createWriteStream(`${identifierFolderPath}/${name}`);
 
         req.pipe(stream);
 
